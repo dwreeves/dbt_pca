@@ -1,0 +1,67 @@
+name: tests
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+    - uses: pre-commit/action@v3.0.0
+  integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dbt_core: [1.9.*]
+        db_target: [duckdb, clickhouse]
+        test_case_materialization: [table, pca]
+#    services:
+#      postgres:
+#        image: postgres
+#        env:
+#          POSTGRES_USER: postgres
+#          POSTGRES_PASSWORD: postgres
+#          POSTGRES_DB: dbt_pca
+#        ports:
+#          - 5432:5432
+#        options: >-
+#          --health-cmd pg_isready
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install
+          chmod +x ./run
+          uv venv
+          uv sync --extra python-dev --extra "${DBT_TARGET}"
+        env:
+          UV_NO_SYNC: true
+          DO_NOT_TRACK: 1
+          DBT_CORE_VERSION: ${{ matrix.dbt_core }}
+          DBT_TARGET: ${{ matrix.db_target }}
+      - name: Test
+        run: ./run test "${DBT_TARGET}" "${TEST_CASE_MATERIALIZATION}"
+        env:
+          UV_NO_SYNC: true
+          DO_NOT_TRACK: 1
+          DBT_TARGET: ${{ matrix.db_target }}
+          TEST_CASE_MATERIALIZATION: ${{ matrix.test_case_materialization }}
+#          POSTGRES_HOST: localhost
+#          POSTGRES_USER: postgres
+#          POSTGRES_PASSWORD: postgres
+#          POSTGRES_DB: dbt_pca

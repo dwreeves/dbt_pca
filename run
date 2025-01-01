@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+export DBT_PROFILES_DIR=./integration_tests/profiles
+export DBT_PROJECT_DIR=./integration_tests
+export DO_NOT_TRACK=1
+
+if [ -f .env ]; then
+  # shellcheck disable=SC2002,SC2046
+  export $(cat .env | xargs)
+fi
+
+function dbt {
+  uv run dbt "${@}"
+}
+
+function setup {
+  uv sync --all-extras
+  uvx pre-commit install
+}
+
+function docker-run-clickhouse {
+    docker run \
+      -d \
+      -p 8123:8123 \
+      --name dbt-pca-clickhouse \
+      --ulimit nofile=262144:262144 \
+      clickhouse/clickhouse-server \
+      || docker start dbt-pca-clickhouse
+}
+
+function clickhouse-client {
+    docker exec -it \
+      dbt-pca-clickhouse \
+      clickhouse-client
+}
+
+function test {
+  local target="${1-"duckdb"}"
+  local materialization="${2-"table"}"
+
+  if [ -z "${GITHUB_ACTIONS}" ] && [ "${target}" = "postgres" ];
+  then
+    createdb "${POSTGRES_DB-"dbt_pca"}" || true
+  fi
+
+  if [ "${target}" = "clickhouse" ];
+  then
+    docker-run-clickhouse || true
+  fi
+
+  if [ -z "${GITHUB_ACTIONS}" ] && [ "${target}" = "duckdb" ];
+  then
+    rm -f dbt.duckdb
+  fi
+
+  uv run scripts.py gen-test-cases
+  dbt deps --target "${target}"
+  dbt seed --target "${target}"
+  dbt run --target "${target}" --selector "${target}-selector" --vars '{"test_case_materialization": "'"${materialization}"'"}'
+  dbt test --target "${target}" --selector "${target}-selector" --store-failures
+
+}
+
+function lint {
+  uv run pre-commit run -a
+}
+
+function docs:deploy {
+  # shellcheck disable=SC2046
+  uv run $(xargs -I{} echo --with {} < docs/requirements.txt) mkdocs gh-deploy -f docs/mkdocs.yml
+}
+
+function help {
+  echo "$0 <task> <args>"
+  echo "Tasks:"
+  compgen -A function | cat -n
+}
+
+TIMEFORMAT=$'\nTask completed in %3lR'
+time "${@:-help}"

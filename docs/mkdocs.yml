@@ -1,0 +1,51 @@
+site_name: dbt_pca
+site_url: https://dwreeves.github.io/dbt_pca/
+site_description: Docs for dbt_pca
+site_author: Daniel Reeves
+repo_url: https://github.com/dwreeves/dbt_pca/
+repo_name: dbt_pca
+docs_dir: src
+nav:
+- Home: index.md
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: light blue
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: light blue
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+  logo: img/dbt-pca-logo.png
+  favicon: img/dbt-pca-favicon.png
+  font:
+    text: Opens Sans
+    code: Roboto Mono
+plugins:
+  - macros
+markdown_extensions:
+  - admonition
+  - pymdownx.tabbed
+  - pymdownx.keys
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - markdown_include.include:
+      base_path: docs
+  - sane_lists
+extra_css:
+  - css/extra.css
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dwreeves/dbt_pca
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/daniel-reeves-27700545/

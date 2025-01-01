@@ -1,0 +1,9 @@
+dbt_pca_profile:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: dbt.duckdb
+    clickhouse:
+      type: clickhouse
+      port: 8123

@@ -1,0 +1,175 @@
+version: 2
+
+macros:
+  - name: pca
+    description: |-
+      **dbt_pca** is an easy way to perform principal component analysis (PCA) in SQL (currently only DuckDB and Clickhouse) using dbt.
+
+      The `dbt_pca.pca()` macro is the core, high-level API for the **dbt_pca** package. This macro will calculate PCA and output loadings (by default), factors, or projections from the PCA.
+
+      Here is an example of a dbt model that selects from a dbt model called `collinear_matrix`, runs PCA on columns `x1`, `x2`, `x3`, `x4`, `x5`, and outputs the loadings of the first 3 principal components:
+
+      {% raw %}
+      ```sql
+      {{
+        config(
+          materialized="table"
+        )
+      }}
+      select * from {{
+        dbt_pca.pca(
+          table=ref('collinear_matrix'),
+          index='idx',
+          columns=['x1', 'x2', 'x3', 'x4', 'x5'],
+          ncomp=3
+        )
+      }} as pca
+      ```
+      {% endraw %}
+    arguments:
+      - name: table
+        type: string
+        description: Name of table or CTE to pull the data from. You can use a `ref()`, `source()`, a CTE name, or subquery.
+      - name: index
+        type: string or list of strings
+        description: The uniquely identifying index for each row of data. You may define one or more columns as the index. This field is **required** if your data is long or you want to output components. (You can also specify `rows=...` instead of `index=...` if you prefer.)
+      - name: columns
+        type: string or list of strings
+        description: Either a list of columns (for wide-formatted data), or a uniquely identifying index for each column of data (for long-formatted data). You may specify multiple columns even for long-formatted data; in this case the multiple columns will be treated like a multi-index.
+      - name: values
+        type: string
+        description: Specifying this will make **dbt_pca** treat your data as long-formatted. This field defines the column in your table corresponding with the cell values of the matrix.
+      - name: values
+        type: integer
+        description: Number of components to return. If `none`, it is set to the number of columns in data if the data is wide-formatted; if data is long-formatted, this must be set. **It is strongly recommended you set the number of components for large data sets**. Most database implementations (except DuckDB) require `ncomp` to be set for long-formatted data.
+      - name: normalize
+        type: boolean
+        description: Indicates whether to normalize the factors to have unit inner product. If False, the loadings will have unit inner product.
+      - name: standardize
+        type: boolean
+        description: Flag indicating to use standardized data with mean 0 and unit variance. `standardized` being True implies demean. Using standardized data is equivalent to computing principal components from the correlation matrix of data.
+      - name: demean
+        type: boolean
+        description: Flag indicating whether to demean data before computing principal components. `demean` is ignored if standardize is True. Demeaning data but not standardizing is equivalent to computing principal components from the covariance matrix of data.
+      - name: weights
+        type: string
+        description: _Does nothing currently._
+      - name: missing
+        type: string
+        description: _Does nothing currently._
+      - name: output
+        type: string
+        description: See **Outputs and output options** section of the README for more.
+      - name: output_options
+        type: dict
+        description: See **Outputs and output options** section of the README for more.
+      - name: method
+        type: string
+        description: The method used to calculate the regression. Currently only `'nipals'` is supported. See **Methods and method options** for more.
+      - name: method_options
+        type: dict
+        description: See **Methods and method options** section of the README for more.
+  - name: materialization_pca_default
+    description: |-
+      **dbt_pca** comes with an optional materialization method called `'pca'`.
+
+      The `'pca'` materialization is recommended if:
+
+      - Almost always if are using Clickhouse.
+
+      The `'pca'` is _**not**_ recommended if:
+
+      - You are running DuckDB, and haven't yet run into any issues with dbt's built-in materializations like `'table'`, `'incremental'`, etc.
+
+      This materialization method bypasses some runtime performance limitations (the most notable being Clickhouse not materializing CTEs) by generating components as a series of tables written to the database.
+      So when this materialization runs with `dbt run`, it actually writes a lot of tables to generate the components instead of doing it in a single shot.
+
+      For the most part, the `'pca'` materialization can do the same things that materializing as a table can. The most notable exception is the `table=...` passed to `dbt_pca.pca()` (i.e. first arg) _must_ be either a `ref()` or a `source()`, and additionally the `ref()` cannot be to an ephemeral model.
+
+  # Everything down here is just for intermediary calculations or helper functions.
+  # There is no point to showing these in the docs.
+  # The truly curious can just look at the source code.
+  #
+  # Please generate the below with the following command:
+  # >>> uv run scripts.py gen-hide-macros-yaml
+  - name: __alias_cols
+    docs:
+      show: false
+  - name: __alias_cols_to_list
+    docs:
+      show: false
+  - name: __unalias_cols
+    docs:
+      show: false
+  - name: _alias_columns_to_list
+    docs:
+      show: false
+  - name: _alias_index_to_list
+    docs:
+      show: false
+  - name: _get_method_option
+    docs:
+      show: false
+  - name: _get_output_option
+    docs:
+      show: false
+  - name: _inject_config_into_materialization
+    docs:
+      show: false
+  - name: _join_predicate
+    docs:
+      show: false
+  - name: _list_with_alias
+    docs:
+      show: false
+  - name: _pca_nipals
+    docs:
+      show: false
+  - name: _pca_nipals_single_iteration
+    docs:
+      show: false
+  - name: _pca_tmp_table
+    docs:
+      show: false
+  - name: _pca_tmp_table_final
+    docs:
+      show: false
+  - name: _single_comp_temp_table_quoted_name
+    docs:
+      show: false
+  - name: _strip_quotes
+    docs:
+      show: false
+  - name: _temp_table_suffix
+    docs:
+      show: false
+  - name: _unalias_columns
+    docs:
+      show: false
+  - name: _unalias_index
+    docs:
+      show: false
+  - name: clickhouse___pca_nipals
+    docs:
+      show: false
+  - name: clickhouse___pca_nipals_single_iteration
+    docs:
+      show: false
+  - name: default___pca_nipals
+    docs:
+      show: false
+  - name: default___pca_nipals_single_iteration
+    docs:
+      show: false
+  - name: duckdb___pca_nipals
+    docs:
+      show: false
+  - name: final_output
+    docs:
+      show: false
+  - name: preproc_step_1_cte
+    docs:
+      show: false
+  - name: preproc_step_2_cte
+    docs:
+      show: false

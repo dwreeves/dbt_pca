@@ -1,0 +1,12 @@
+name: "dbt_pca"
+version: "0.0.1"
+
+require-dbt-version: [">=1.4.0", "<2.0.0"]
+
+config-version: 2
+
+target-path: "target"
+clean-targets: ["target", "dbt_modules", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"
+profile: "dbt_pca_profile"
