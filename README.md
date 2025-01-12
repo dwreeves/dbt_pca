@@ -26,14 +26,17 @@
 
 # Overview
 
-**dbt_pca** is an easy way to perform principal component analysis (PCA) in SQL (currently only DuckDB and Clickhouse) using dbt.
+**dbt_pca** is an easy way to perform principal component analysis (PCA) in SQL using dbt.
 
 Reasons to use **dbt_pca**:
 
 - 📈 **PCA in pure SQL:** With the power of recursive CTEs and math, it is possible to implement PCA in pure SQL. Most SQL engines (even OLAP engines) do not have an implementation of PCA, so this fills a valuable niche. **`dbt_pca` implements a true implementation of PCA via the NIPALS algorithm.**
 - 📱 **Simple interface:** Just define a `table=` (which works with `ref()`, `source()`, and CTEs), your column(s) with `columns=`, an index with `index=`, and you're all set! Both "wide" and "long" data formats are supported.
-- 🤸‍ **Flexibility:** Tons of output options available to return what you want: loadings + eigenvalues or components, in either wide or long formats.
-- 💪 **Durable and tested:** The API provides feedback on parsing errors, and everything in this code base has been tested (check the continuous integration).
+- 🤸‍ **Flexibility:** Tons of output options available to return things the way you want: choose from eigenvectors, factors, and projections in both wide and long formats.
+- 🤗 **User friendly:** The API provides comprehensive feedback on input errors.
+- 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCAz performed in Statsmodels with high precision assertions (between 10e-6 to 10e-7, depending on the database engine).
+
+**Currently only DuckDB and Clickhouse are supported.**
 
 _Note: If you enjoy this project, you may also enjoy my other dbt machine learning project, [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg)._ 😊
 
@@ -55,7 +58,7 @@ packages:
   # ...
   # Other packages here
   # ...
-  - package: "https://github.com/dwreeves/dbt_pca.git"
+  - git: "https://github.com/dwreeves/dbt_pca.git"
     version: "0.0.1"
 ```
 
@@ -472,6 +475,35 @@ For the most part, the `'pca'` materialization can do the same things that mater
         </tr>
     </tbody>
 </table>
+
+## Output options
+
+### Column names
+
+- **columns_column_name** (`string`; default: `'col'`): When converting a wide input to a long output, this is the column name used to group all the columns together.
+- **eigenvector_column_name** (`string`; default: `'eigenvector'`): Column name for eigenvectors i.e. loadings.
+  - In long formatted outputs, the column `{{eigenvector_column_name}}` contains the values of the eigenvectors.
+  - In wide formatted outputs, there will be multiple columns `{{eigenvector_column_name}}_{{i}}`, where `i` is an index for the principal component.
+- **eigenvalue_column_name** (`string`; default: `'eigenvalue'`): Column name for eigenvalues.
+- **coefficient_column_name** (`string`; default: `'coefficient'`): Column names for coefficient i.e. `eigenvector * sqrt(eigenvalue)`.
+  - In long formatted outputs, the column `{{coefficient_column_name}}` contains the values of the coefficients.
+  - In wide formatted outputs, there will be multiple columns `{{coefficient_column_name}}_{{i}}`, where `i` is an index for the principal component.
+- **component_column_name** (`string`; default: `'comp'`): Identifier for principal component; this is an integer typed column that identifies the component (e.g. if there are 3 components, then `{{component_column_name}}` can take on values of `0`, `1`, and `2`).
+- **factor_column_name** (`string`; default: `'factor'`): Column name for factors i.e. principal components.
+  - In long formatted outputs, the column `{{factor_column_name}}` contains the values of the principal component vectors.
+  - In wide formatted outputs, there will be multiple columns `{{factor_column_name}}_{{i}}`, where `i` is an index for the principal component.
+- **projection_column_name** (`string`; default: `'projection'`): Column name for projections of data onto the principal components.
+
+### Column display
+
+- **display_eigenvalues** (`bool`; default = `True`): If True, display eigenvalues in loadings output.
+- **display_coefficients** (`bool`; default = `True`): If True, display coefficients in loadings output.
+
+### Other
+
+- **strip_quotes** (`bool`; default = `True`): If true, strip outer quotes from column names in long outputs; if false, always use string literals.
+
+
 
 # Methods and method options
 
