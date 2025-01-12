@@ -503,7 +503,19 @@ For the most part, the `'pca'` materialization can do the same things that mater
 
 - **strip_quotes** (`bool`; default = `True`): If true, strip outer quotes from column names in long outputs; if false, always use string literals.
 
+## Setting output options globally
 
+Output options can be set globally via `vars`, e.g. in your `dbt_project.yml`:
+
+```yaml
+# dbt_project.yml
+vars:
+  dbt_pca:
+    output_options:
+      eigenvector_column_name: loading
+      eigenvalue_column_name: eigenval
+      coefficient_column_name: coeff
+```
 
 # Methods and method options
 
@@ -524,9 +536,22 @@ Specify these in a dict using the `method_options=` kwarg:
 - **max_iter** (`int`; default: varies) - Maximum iterations of the NIPALS algorithm.
 - **check_tol** (`bool`; default: varies) - If True, then check for convergence using the `tol` value. If False, always iterate `max_iter` times.
 - **tol** (`bool`; default: `5e-8`) - Tolerance to use when checking for convergence.
-- **deterministic_column_seeding** (`bool`; default: `False`) - If True, seed the initial column in a factor calculation with the alphanumerically first column. This guarantees the sign of the eigenvector even when normalized, but is significantly slower to converge.
+- **deterministic_column_seeding** (`bool`; default: `False`) - If True, seed the initial column in a factor calculation with the alphanumerically first column. This guarantees the sign of the eigenvector even when normalized, but is significantly slower to converge. It is strongly recommended to keep this turned off.
 
 Some default values vary based on the database engine being used, and whether `materialized='pca'` is set.
+
+## Setting method options globally
+
+Method options can be set globally via `vars`, e.g. in your `dbt_project.yml`. Each `method` gets its own config, e.g. the `dbt_pca: method_options: nipals: ...` namespace only applies to the `nipals` method. Here is an example:
+
+```yaml
+# dbt_project.yml
+vars:
+  dbt_pca:
+    method_options:
+      nipals:
+        max_iter: 300
+```
 
 # Performance optimization
 
