@@ -47,7 +47,7 @@ dbt-core `>=1.4.0` is required to install `dbt_pca`.
 Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
-  - git: "https://github.com/dwreeves/dbt_pca.git"
+  - package: "dwreeves/dbt_linreg"
     version: "0.0.1"
 ```
 
@@ -58,7 +58,7 @@ packages:
   # ...
   # Other packages here
   # ...
-  - git: "https://github.com/dwreeves/dbt_pca.git"
+  - package: "dwreeves/dbt_linreg"
     version: "0.0.1"
 ```
 
