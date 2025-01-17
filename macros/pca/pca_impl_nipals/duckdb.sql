@@ -41,6 +41,7 @@
   columns=columns,
   index=index,
   values=values,
+  weights=weights,
   long=long,
   output_options=output_options
 ) }},
@@ -49,7 +50,8 @@
   cols=cols,
   idx=idx,
   standardize=standardize,
-  demean=demean
+  demean=demean,
+  weights=weights
 ) }},
 
 dbt_pca_comps_combined as materialized (

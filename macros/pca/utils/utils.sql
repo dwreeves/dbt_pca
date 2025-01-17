@@ -48,6 +48,7 @@
                             columns,
                             index,
                             values,
+                            weights,
                             long,
                             output_options
 
@@ -72,6 +73,9 @@ dbt_pca_preproc_step1 as (
     rownum as idx,
     {% endif %}
     {{ dbt.string_literal(dbt_pca._strip_quotes(c, output_options)) }} as col,
+    {% if weights %}
+    {{ weights[loop.index-1] }} as w,
+    {% endif %}
     {{ c }} as x
   from {{ tbl }}
   {% if not loop.last %}
@@ -92,8 +96,10 @@ dbt_pca_preproc_step1 as (
                             idx,
                             standardize,
                             demean,
+                            weights,
                             include_iter=false
 ) %}
+{% set _w = ' / sqrt(p.w)' if weights else '' %}
 dbt_pca_preproc_step2 as (
   select
     {{ dbt_pca._list_with_alias(idx, 'p') }},
@@ -101,13 +107,16 @@ dbt_pca_preproc_step2 as (
     {%- if standardize %}
     avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }}) as mu,
     stddev_pop(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }}) as sigma,
-    (p.x - avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }})) / stddev_pop(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }}) as x
+    (p.x - avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }})) / stddev_pop(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }}){{ _w }} as x
     {%- elif demean %}
     avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }}) as mu,
-    (x - avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }})) as x
+    (x - avg(p.x) over (partition by {{ dbt_pca._list_with_alias(cols, 'p') }})){{ _w }} as x
     {%- else %}
-    p.x
+    p.x{{ _w }} as x
     {%- endif %}
+    {%- if weights %},
+    p.w as w
+    {% endif %}
     {%- if include_iter %},
     -1 as _iter
     {%- endif %}
@@ -234,6 +243,7 @@ group by {{ dbt_pca._list_with_alias(idx, 'f') }}
 order by {{ dbt_pca._list_with_alias(idx, 'f') }}
 {% else %},
 {# The remainder of these are projections, so they involve the following CTE #}
+{% set _w = ' * sqrt(any_value(p.w))' if weights else '' %}
 dbt_pca_projections as (
 
   select
@@ -241,11 +251,11 @@ dbt_pca_projections as (
     {{ dbt_pca._list_with_alias(idx, 'f', add_as=true) }},
     {%- if output != "projections-untransformed-wide" %}
     {%- if standardize %}
-    sum(e.coefficient * f.factor) * any_value(p.sigma) + any_value(p.mu) as projection
+    sum(e.coefficient * f.factor) * any_value(p.sigma){{ _w }} + any_value(p.mu) as projection
     {%- elif demean %}
-    sum(e.coefficient * f.factor) + any_value(p.mu) as projection
+    sum(e.coefficient * f.factor){{ _w }} + any_value(p.mu) as projection
     {%- else %}
-    sum(e.coefficient * f.factor) as projection
+    sum(e.coefficient * f.factor){{ _w }} as projection
     {%- endif %}
     {%- endif %}{%- if dbt_pca._get_output_option("display_untransformed_projection", output_options, false) or output == "projections-untransformed-wide" %}{% if output != "projections-untransformed-wide" %},{% endif %}
     sum(e.coefficient * f.factor) as projection_untransformed
@@ -253,7 +263,7 @@ dbt_pca_projections as (
   from dbt_pca_factors as f
   inner join dbt_pca_eigenvectors as e
   on f.comp = e.comp
-  {%- if standardize or demean %}
+  {%- if standardize or demean or weights %}
   inner join dbt_pca_preproc_step2 as p
   on {{ dbt_pca._join_predicate(cols, 'e', 'p') }}
     and {{ dbt_pca._join_predicate(idx, 'f', 'p') }}

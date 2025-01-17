@@ -273,6 +273,7 @@ with recursive
   columns=columns,
   index=index,
   values=values,
+  weights=weights,
   long=long,
   output_options=output_options
 ) }},
@@ -282,6 +283,7 @@ with recursive
   idx=idx,
   standardize=standardize,
   demean=demean,
+  weights=weights,
   include_iter=true
 ) }},
 
@@ -324,6 +326,7 @@ with
   columns=columns,
   index=index,
   values=values,
+  weights=weights,
   long=long,
   output_options=output_options
 ) }},
@@ -332,7 +335,8 @@ with
   cols=cols,
   idx=idx,
   standardize=standardize,
-  demean=demean
+  demean=demean,
+  weights=weights
 ) }},
 
 {%- endif %}

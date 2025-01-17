@@ -40,6 +40,7 @@
   columns=columns,
   index=index,
   values=values,
+  weights=weights,
   long=long,
   output_options=output_options
 ) }},
@@ -49,6 +50,7 @@
   idx=idx,
   standardize=standardize,
   demean=demean,
+  weights=weights,
   include_iter=true
 ) }},
 

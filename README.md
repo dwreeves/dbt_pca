@@ -5,7 +5,7 @@
 >
 > The following features are currently missing and are being prioritized for a **0.1.0** release:
 > - Missing value support (but probably not the EM algorithm algorithm for the time being).
-> - Support for weights
+> - ~~Support for weights~~
 > - Snowflake support
 > - User facing conversion functions for eigenvectors --> factors + projections.
 > - (Maybe) Fuller, paginated documentation on Github Pages.
@@ -603,6 +603,17 @@ select * from {{
   )
 }}
 ```
+
+# Notes
+
+## Possible future features
+
+Some things that could happen in the future:
+
+- Better support for weights. Weights are only supported right now with wide formatted inputs.
+
+Note that this wish list is unlikely unless I personally need it or unless someone else contributes these features.
+I will continue to maintain this project going forward, but this project was a lot of work to get where it is today, and adding new features is not a high priority in my life.
 
 # FAQ
 

@@ -22,8 +22,8 @@ from typing import Protocol
 import numpy as np
 import pandas as pd
 import rich_click as click
-import statsmodels.api as sm
 import yaml
+from statsmodels.multivariate.pca import PCA
 from tabulate import tabulate
 
 
@@ -51,34 +51,6 @@ class TestCaseCallable(Protocol):
         ...
 
 
-def gram_schmidt(df: pd.DataFrame):
-    q = pd.DataFrame(index=df.index)
-    for c, v in df.items():
-        v_new = v.copy()
-        for _, u in q.items():
-            v_new -= u * u.dot(v) / u.dot(u)
-        q[c] = v_new / np.linalg.norm(v_new)
-    return q
-
-
-def orthogonal_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> TestCase:
-    rs = np.random.RandomState(seed=seed)
-    df = pd.DataFrame(index=range(size))
-
-    cols = ["xa", "xb", "xc", "xd", "xe", "xf", "xg", "xh", "xi", "xj"]
-
-    for c in cols:
-        df[c] = rs.normal(0, 1, size=size)
-
-    # Center the columns
-    for c in cols:
-        df[c] -= df[c].mean()
-
-    df = gram_schmidt(df)
-
-    return TestCase(df=df)
-
-
 def collinear_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> TestCase:
     rs = np.random.RandomState(seed=seed)
     df = pd.DataFrame(index=range(size))
@@ -89,7 +61,13 @@ def collinear_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> Test
     df["x4"] = -3 + 0.5 * (df["x1"] * df["x3"]) + rs.normal(0, 1, size=size)
     df["x5"] = 4 + 0.5 * np.sin(3 * df["x2"]) + rs.normal(0, 1, size=size)
 
-    return TestCase(df=df, index_column="idx")
+    weights = pd.Series([1, 3, 3, 2, 4], index=["x1", "x2", "x3", "x4", "x5"])
+
+    return TestCase(df=df, index_column="idx", weights=weights)
+
+
+def missing_data_matrix():
+    pass
 
 
 def write_sql_of_dataframe(df: pd.DataFrame) -> str:
@@ -105,7 +83,6 @@ def write_sql_of_dataframe(df: pd.DataFrame) -> str:
 
 
 ALL_TEST_CASES: dict[str, TestCaseCallable] = {
-    "orthogonal_matrix": orthogonal_matrix,
     "collinear_matrix": collinear_matrix,
 }
 
@@ -144,7 +121,7 @@ def cli():
               default=False,
               type=click.BOOL,
               show_default=True,
-              help="If true, use weights.")
+              help="If true, use weights. NOTE: Weights not currently supported in ")
 @click.option("--columns", "-c",
               default=None,
               type=click.INT,
@@ -239,18 +216,21 @@ def pca_(
 
     if columns is None:
         cols = test_case.df.columns
+        wts = test_case.weights
     else:
-        # K plus Constant (1)
-        cols = test_case.df.columns[:columns+1]
+        cols = test_case.df.columns[:columns]
+        wts = test_case.weights.iloc[:columns]
 
-    pca = sm.PCA(
-        test_case.df[[i for i in cols if i != test_case.index_column]],
+    pca = PCA(
+        test_case.df[
+            [i for i in cols if i not in {test_case.index_column}]
+        ],
         ncomp=ncomp,
         method=method,
         demean=demean,
         standardize=standardize,
         normalize=normalize,
-        weights=test_case.weights,
+        weights=wts if weights else None,
         missing=missing,
         tol=tol
     )

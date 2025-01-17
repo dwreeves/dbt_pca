@@ -88,6 +88,29 @@
       ) }}
   {% endif %}
 
+  {% if weights %}
+    {% if values is not none %}
+      {{ exceptions.raise_compiler_error("Weights are only supported for wide-formatted data.") }}
+    {% elif weights is string or (weights | length) != (columns | length) %}
+      {{ exceptions.raise_compiler_error(
+        "Weights must be a list of numbers, and the length of the list must be equal to the number of columns."
+      ) }}
+    {% endif %}
+
+    {# Normalize weights to unit length #}
+    {% set ns = namespace(w_rms=0) %}
+    {% for w in weights %}
+      {% set ns.w_rms = ns.w_rms + (w * w) %}
+    {% endfor %}
+    {% set ns.w_rms = (ns.w_rms / weights | length) ** 0.5 %}
+    {% set new_weights = [] %}
+    {% for w in weights %}
+      {% do new_weights.append(w / ns.w_rms) %}
+    {% endfor %}
+    {% set weights = new_weights %}
+
+  {% endif %}
+
   {% if columns is none %}
     {{ exceptions.raise_compiler_error("Missing arg 'columns' for macro `pca()`.") }}
   {% elif columns is string %}
