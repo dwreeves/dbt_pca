@@ -272,6 +272,8 @@ Please see the **Performance optimization** section on how to get the best perfo
 My goal is to have this working in Snowflake as well, but this has proven difficult to do.
 Please check back soon.
 
+> _\* Precision is comparison to `PCA(method='nipals')` in Statsmodels. In some cases, precision depends on the implementation method; precision is based on suggested implementation._
+
 # API
 
 ### `{{ dbt_pca.pca() }}`
@@ -289,8 +291,8 @@ def pca(
     standardize: bool = True,
     demean: bool = True,
     # missing: Literal[None] = None,
-    # weights: Literal[None] = None,
-    output: Literal['loadings'] = 'loadings',
+    weights: list[float | int] | None = None,
+    output: str = 'loadings',
     output_options: dict[str, Any] | None = None,
     method: Literal['nipals'] = 'nipals',
     method_options: dict[str, Any] | None = None
@@ -309,7 +311,7 @@ Where:
 - **standardize**: Flag indicating to use standardized data with mean 0 and unit variance. standardized being True implies demean. Using standardized data is equivalent to computing principal components from the correlation matrix of data.
 - **demean**: Flag indicating whether to demean data before computing principal components. demean is ignored if standardize is True. Demeaning data but not standardizing is equivalent to computing principal components from the covariance matrix of data.
 - **missing**: _Does nothing currently._
-- **weights**: _Does nothing currently._
+- **weights**: Column weights to use after transforming data according to standardize or demean when computing the principal components.
 - **output**: See **Outputs and output options** section of the README for more. This can be one of the following:
   - `'loadings'`
   - `'loadings-long'`

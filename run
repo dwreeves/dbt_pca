@@ -36,6 +36,15 @@ function clickhouse-client {
       clickhouse-client
 }
 
+function docker-run-postgres {
+    docker run \
+      -d \
+      -p 5433:5432 \
+      --name dbt-pca-postgres \
+      postgres \
+      || docker start dbt-pca-postgres
+}
+
 function test {
   local target="${1-"duckdb"}"
   local materialization="${2-"table"}"

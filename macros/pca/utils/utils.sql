@@ -53,14 +53,25 @@
                             output_options
 
 ) %}
-{% if not long and index is none %}
-dbt_pca_preproc_step0 as (
-  select *, row_number() over (order by {{ columns | join(', ') }}) as rownum
-  from {{ table }}
-),
-{% set tbl = 'dbt_pca_preproc_step0' %}
-{% else %}
 {% set tbl = table %}
+{% if not long and index is none %}
+dbt_pca_preproc_add_idx as (
+  select *, row_number() over (order by {{ columns | join(', ') }}) as __dbt_pca_rownum
+  from {{ tbl }}
+),
+{% set tbl = 'dbt_pca_preproc_add_idx' %}
+{% endif %}
+{% if not long and missing == 'drop-row' %}
+dbt_pca_preproc_missing_drop_row as (
+  select *
+  from {{ tbl }}
+  where
+  {%- for i in index %}
+    {{ i }} is not null
+    {% if not loop.last %}and{% endif %}
+  {%- endfor %}
+),
+{% set tbl = 'dbt_pca_preproc_missing_drop_row' %}
 {% endif %}
 dbt_pca_preproc_step1 as (
   {% if not long %}
@@ -70,14 +81,21 @@ dbt_pca_preproc_step1 as (
     {% if index is not none %}
     {{ dbt_pca.__alias_cols(index, 'idx') }},
     {% else %}
-    rownum as idx,
+    __dbt_pca_rownum as idx,
     {% endif %}
     {{ dbt.string_literal(dbt_pca._strip_quotes(c, output_options)) }} as col,
     {% if weights %}
     {{ weights[loop.index-1] }} as w,
     {% endif %}
+    {% if missing == 'zero' %}
+    coalesce({{ c }}, 0) as x
+    {% else %}
     {{ c }} as x
+    {% endif %}
   from {{ tbl }}
+  {% if missing == 'drop-col' %}
+  qualify min({{ c }} is not null) over ()
+  {% endif %}
   {% if not loop.last %}
   union all
   {% endif %}

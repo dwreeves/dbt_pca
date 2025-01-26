@@ -1,5 +1,5 @@
-tests/dbt_project/package-lock.yml
-tests/dbt_project/seeds/*.csv
+integration_tests/package-lock.yml
+integration_tests/seeds/*.csv
 dbt.duckdb
 dbt.duckdb.wal
 dbt.duckdb.tmp/

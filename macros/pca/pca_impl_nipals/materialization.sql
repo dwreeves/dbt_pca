@@ -10,6 +10,20 @@
   {%- set preexisting_backup_relation = none -%}
   {%- set preexisting_intermediate_relation = none -%}
 
+  {% if existing_relation is not none %}
+    {%- set backup_relation_type = existing_relation.type -%}
+    {%- set backup_relation = make_backup_relation(target_relation, backup_relation_type) -%}
+    {%- set preexisting_backup_relation = load_cached_relation(backup_relation) -%}
+    {% if not existing_relation.can_exchange %}
+      {%- set intermediate_relation =  make_intermediate_relation(target_relation) -%}
+      {%- set preexisting_intermediate_relation = load_cached_relation(intermediate_relation) -%}
+    {% endif %}
+  {% endif %}
+
+  -- drop the temp relations if they exist already in the database
+  {{ drop_relation_if_exists(preexisting_intermediate_relation) }}
+  {{ drop_relation_if_exists(preexisting_backup_relation) }}
+
   {% for _count_check in range(1000) %}
     {% set possible_tmp_relation = make_intermediate_relation(target_relation, suffix=dbt_pca._temp_table_suffix(_count_check, 0)) %}
     {% set possible_tmp_relation = adapter.get_relation(
@@ -36,10 +50,6 @@
   {% endfor %}
 
   {{ run_hooks(pre_hooks, inside_transaction=False) }}
-
-  -- drop the temp relations if they exist already in the database
-  {{ drop_relation_if_exists(preexisting_intermediate_relation) }}
-  {{ drop_relation_if_exists(preexisting_backup_relation) }}
 
   {% set final_relations = [] %}
   {% for row in model.compiled_code.split("\n") %}
@@ -68,6 +78,7 @@
           standardize=pca_config.get("standardize"),
           demean=pca_config.get("demean"),
           missing=pca_config.get("missing"),
+          weights=pca_config.get("weights"),
           output=pca_config.get("output"),
           output_options=pca_config.get("output_options"),
           method_options=pca_config.get("method_options"),
@@ -93,6 +104,7 @@
       standardize=pca_config.get("standardize"),
       demean=pca_config.get("demean"),
       missing=pca_config.get("missing"),
+      weights=pca_config.get("weights"),
       output=pca_config.get("output"),
       output_options=pca_config.get("output_options"),
       method_options=pca_config.get("method_options"),
@@ -107,16 +119,6 @@
     {% endfor %}
     {% endif %}
   {% endfor %}
-
-  {% if existing_relation is not none %}
-    {%- set backup_relation_type = existing_relation.type -%}
-    {%- set backup_relation = make_backup_relation(target_relation, backup_relation_type) -%}
-    {%- set preexisting_backup_relation = load_cached_relation(backup_relation) -%}
-    {% if not existing_relation.can_exchange %}
-      {%- set intermediate_relation =  make_intermediate_relation(target_relation) -%}
-      {%- set preexisting_intermediate_relation = load_cached_relation(intermediate_relation) -%}
-    {% endif %}
-  {% endif %}
 
   {% set grant_config = config.get('grants') %}
 
@@ -180,7 +182,7 @@
                                              standardize=true,
                                              demean=true,
                                              missing=none,
-                                             weights=weights,
+                                             weights=none,
                                              output='loadings',
                                              output_options=none,
                                              method='nipals',
@@ -202,6 +204,7 @@
     "columns": columns,
     "rows": rows,
     "values": values,
+    "weights": weights,
     "ncomp": ncomp,
     "normalize": normalize,
     "standardize": standardize,

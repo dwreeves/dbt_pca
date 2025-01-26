@@ -66,8 +66,35 @@ def collinear_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> Test
     return TestCase(df=df, index_column="idx", weights=weights)
 
 
-def missing_data_matrix():
-    pass
+def generate_orthonormal_vectors(cols, rows):
+    def make_vector_orthogonal(v, basis):
+        for basis_vector in vectors:
+            projection = np.dot(v, basis_vector) / np.dot(basis_vector, basis_vector)
+            v -= projection * basis_vector
+        return v
+
+    vectors = []
+
+    for _ in range(cols):
+        v = np.random.normal(0, 1, size=rows)
+        v = make_vector_orthogonal(v, vectors)
+        vectors.append(v)
+
+    vectors = [(v - v.mean()) / v.std() for v in vectors]
+    return np.array(vectors)
+
+
+def missing_data_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> TestCase:
+    cols = 8
+    rs = np.random.RandomState(seed=seed)
+    df = pd.DataFrame(index=range(size))
+
+    for c in range(cols):
+        df[f"c{c}"] = rs.normal(0, 1, size=size)
+
+    cov = np.array([[1.0 if i == j else 0.7 for i in range(cols)] for j in range(cols)])
+    new = df @ np.linalg.cholesky(cov).T
+    new.columns = df.columns
 
 
 def write_sql_of_dataframe(df: pd.DataFrame) -> str:
