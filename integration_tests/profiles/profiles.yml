@@ -1,5 +1,5 @@
 dbt_pca_profile:
-  target: duckdb
+  target: snowflake
   outputs:
     duckdb:
       type: duckdb
@@ -7,3 +7,12 @@ dbt_pca_profile:
     clickhouse:
       type: clickhouse
       port: 8123
+    snowflake:
+      type: snowflake
+      account: '{{ env_var("SNOWFLAKE_ACCOUNT") }}'
+      user: '{{ env_var("SNOWFLAKE_USER") }}'
+      password: '{{ env_var("SNOWFLAKE_PASSWORD") }}'
+      role: '{{ env_var("SNOWFLAKE_ROLE") }}'
+      warehouse: '{{ env_var("SNOWFLAKE_WAREHOUSE") }}'
+      database: '{{ env_var("SNOWFLAKE_DATABASE") }}'
+      schema: '{{ env_var("SNOWFLAKE_SCHEMA") }}'

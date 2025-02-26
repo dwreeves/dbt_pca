@@ -47,7 +47,7 @@ function docker-run-postgres {
 
 function test {
   local target="${1-"duckdb"}"
-  local materialization="${2-"table"}"
+  # local materialization="${2-"table"}"
 
   if [ -z "${GITHUB_ACTIONS}" ] && [ "${target}" = "postgres" ];
   then
@@ -67,7 +67,7 @@ function test {
   uv run scripts.py gen-test-cases
   dbt deps --target "${target}"
   dbt seed --target "${target}"
-  dbt run --target "${target}" --selector "${target}-selector" --vars '{"test_case_materialization": "'"${materialization}"'"}'
+  dbt run --target "${target}" --selector "${target}-selector" --vars # '{"test_case_materialization": "'"${materialization}"'"}'
   dbt test --target "${target}" --selector "${target}-selector" --store-failures
 
 }

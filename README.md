@@ -265,6 +265,7 @@ Hopefully this example inspires you to explore all the possibilities!
 |----------------|-----------|----------------------------|-------------------------|
 | **DuckDB**     | ✅         | 10e-7                      | 0.1.0                   |
 | **Clickhouse** | ✅         | 10e-6                      | 0.1.0                   |
+| **Snowflake**  | ✅         | WIP                        | 0.1.0                   |
 
 Please see the **Performance optimization** section on how to get the best performance out of each database.
 
@@ -328,7 +329,7 @@ Where:
   - `'projections-wide'`
   - `'projections-untransformed-wide'`
 - **output_options**:  See **Outputs and output options** section of the README for more.
-- **method**: The method used to calculate the regression. Currently only `'nipals'` is supported. See **Methods and method options** for more.
+- **method**: The method used to calculate the regression. Currently only `'nipals'` is supported for non-Snowflake databases. See **Methods and method options** for more.
 - **method_options**: Options specific to the estimation method. See **Methods and method options** for more.
 
 Names for function arguments and concepts vary across PCA implementations in different languages and frameworks.
@@ -521,7 +522,9 @@ vars:
 
 # Methods and method options
 
-There is currently only one method for calculating PCA, `'nipals'`, and I currently do not have plans to implement more as frankly it's taken years off my life to just implement the one. 😆
+There is currently only one method for calculating PCA in pure SQL, `'nipals'`, and I currently do not have plans to implement more as frankly it's taken years off my life to just implement the one. 😆
+
+Because Snowflake is just a pass-through to `sm.PCA()`, the Snowflake implementation supports everything Statsmodels supports: `'nipals'`, `'svd'`, and `'eig'`.
 
 ## `nipals` method
 
@@ -529,7 +532,7 @@ Nonlinear Iterative Partial Least Squares (NIPALS), a method that is optimized f
 In practical settings, we usually want far fewer components than there are columns in the data, so this ends up being a good trade-off.
 
 Another advantage of NIPALS is it can be modified to handle missing data.
-This is a common method in many implementations of PCA, although it is not currently supported. (It's on the roadmap!)
+This is a common method in many implementations of PCA, although it is not currently supported in the pure SQL implementations. (It's on the roadmap!)
 
 ### Options for `method='nipals'`
 
@@ -605,6 +608,10 @@ select * from {{
   )
 }}
 ```
+
+### Snowflake performance optimization
+
+WIP
 
 # Notes
 

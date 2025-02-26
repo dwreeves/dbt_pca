@@ -10,7 +10,8 @@
                                  weights,
                                  output,
                                  output_options,
-                                 method_options) %}
+                                 method_options,
+                                 materialization_options) %}
 {% set long = ((values is not none) | as_bool) %}
 {%- set cols = dbt_pca._alias_columns_to_list(columns) if long else ['col'] %}
 {%- set idx = dbt_pca._alias_index_to_list(index) if index else ['idx'] %}

@@ -57,7 +57,7 @@
 {% if not long and index is none %}
 dbt_pca_preproc_add_idx as (
   select *, row_number() over (order by {{ columns | join(', ') }}) as __dbt_pca_rownum
-  from {{ tbl }}
+  from {{ table }}
 ),
 {% set tbl = 'dbt_pca_preproc_add_idx' %}
 {% endif %}
@@ -370,4 +370,8 @@ order by {{ dbt_pca._list_with_alias(idx, 'p') }}
 
 {% macro _get_method_option(method, field, method_options, default=none) %}
   {{ return(method_options.get(field, var("dbt_pca", {}).get("method_options", {}).get(method, {}).get(field, default))) }}
+{% endmacro %}
+
+{% macro _get_materialization_option(field, method_options, default=none) %}
+  {{ return(method_options.get(field, var("dbt_pca", {}).get("materialization_options", {}).get(field, default))) }}
 {% endmacro %}

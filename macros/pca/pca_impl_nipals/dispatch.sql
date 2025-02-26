@@ -10,7 +10,8 @@
                      weights,
                      output,
                      output_options,
-                     method_options) %}
+                     method_options,
+                     materialization_options) %}
   {{ return(
     adapter.dispatch('_pca_nipals', 'dbt_pca')(
       table=table,
@@ -25,7 +26,8 @@
       weights=weights,
       output=output,
       output_options=output_options,
-      method_options=method_options
+      method_options=method_options,
+      materialization_options=materialization_options
     )
   ) }}
 {% endmacro %}
@@ -42,9 +44,30 @@
                               weights,
                               output,
                               output_options,
-                              method_options) %}
+                              method_options,
+                              materialization_options) %}
   {{ exceptions.raise_not_implemented(
     "This database is not currently supported."
+  ) }}
+{% endmacro %}
+
+{% macro snowflake___pca_nipals(table,
+                                index,
+                                columns,
+                                values,
+                                ncomp,
+                                normalize,
+                                standardize,
+                                demean,
+                                missing,
+                                weights,
+                                output,
+                                output_options,
+                                method_options,
+                                materialization_options) %}
+  {{ exceptions.raise_not_implemented(
+    "The Snowflake adapter requires the 'pca' materialization to run the pca() macro."
+    " Please set materialized='pca' in your model config."
   ) }}
 {% endmacro %}
 

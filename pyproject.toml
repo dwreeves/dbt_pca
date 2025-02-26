@@ -30,6 +30,10 @@ postgres = [
     "dbt-core",
     "dbt-postgres",
 ]
+snowflake = [
+    "dbt-core",
+    "dbt-snowflake",
+]
 
 [tool.ruff]
 line-length = 120

@@ -13,7 +13,7 @@
              output_options=none,
              method='nipals',
              method_options=none,
-             _materialized=none) -%}
+             materialization_options=none) -%}
 
   {#############################################################################
 
@@ -40,6 +40,10 @@
     {% set method_options = {} %}
   {% endif %}
 
+  {% if materialization_options is none %}
+    {% set materialization_options = {} %}
+  {% endif %}
+
   {% if rows is not none and index is none %}
     {% set index = rows %}
   {% elif rows is not none and index is not none %}
@@ -53,19 +57,30 @@
     {% set method = 'nipals' %}
   {% endif %}
 
-  {% if _materialized is none %}
-    {% set _materialized = model.config.materialized %}
+  {% set calculate_in_steps = dbt_pca._get_materialization_option(
+    'calculate_in_steps',
+    materialization_options,
+    none
+  ) %}  #
+  {% set inject_config = adapter.type() == 'snowflake' or calculate_in_steps %}
+  {% if adapter.type() == 'clickhouse' and calculate_in_steps is none %}
+    {% if (table.identifier is undefined or table.is_cte) %}
+      {% do log(
+        "Warning: when table= is not a `ref()` or a `source()`, pca() cannot be calculated in steps,"
+        " which may significantly degrade performance in Clickhouse."
+        " It is suggested you set table= to a `ref()` or a `source()`."
+        " To disable this warning message, explicitly set calculate_in_steps to false: "
+        " `materialization_options={'calculate_in_steps': false}`.",
+        info=true
+      ) %}
+      {% set calculate_in_steps = false %}
+    {% else %}
+      {% set calculate_in_steps = true %}
+    {% endif %}
   {% endif %}
 
   {# Check for user input errors #}
   {# --------------------------- #}
-
-  {% if _materialized == 'pca' and (table.identifier is undefined or table.is_cte) %}
-    {{ exceptions.raise_compiler_error(
-      "When using the 'pca' materialization, the `table=` input must be either a `ref()` or `source()`"
-      " to a non-ephemeral node."
-    ) }}
-  {% endif %}
 
   {% if long and index is none %}
     {{ exceptions.raise_compiler_error(
@@ -148,12 +163,12 @@
   {% endif %}
 
   {% if output in ['loadings-wide', 'factors-wide'] and ncomp is none %}
-      {{ exceptions.raise_compiler_error(
-        "'" ~output~ "' formatted outputs require that you specify the number of components with `ncomp=...`"
-        " because the number of components that will be created (and therefore the number of columns that will"
-        " be output) is not known at compile time. Please choose another output type or specify the number of"
-        " components."
-      ) }}
+    {{ exceptions.raise_compiler_error(
+      "'" ~output~ "' formatted outputs require that you specify the number of components with `ncomp=...`"
+      " because the number of components that will be created (and therefore the number of columns that will"
+      " be output) is not known at compile time. Please choose another output type or specify the number of"
+      " components."
+    ) }}
   {% endif %}
 
   {% if index is none and output in ['factors', 'factors-long'] %}
@@ -171,19 +186,19 @@
   {% endif %}
 
   {% if ncomp is none %}
-      {% if values is none %}
-        {% set ncomp = (columns | length) %}
-      {% elif adapter.type() != 'duckdb' %}
-        {{ exceptions.raise_compiler_error(
-          "This database's PCA implementation requires defining the number of principal components"
-          " when data is long formatted. Please set `dbt_pca.pca(ncomp=...)`"
-        ) }}
-      {% elif _materialized == 'pca' %}
-        {{ exceptions.raise_compiler_error(
-          "The 'pca' materialization requires defining the number of principal components for long-formatted data."
-          " Please set `ncomp=...`."
-        ) }}
-      {% endif %}
+    {% if values is none %}
+      {% set ncomp = (columns | length) %}
+    {% elif adapter.type() not in ['duckdb', 'snowflake'] %}
+      {{ exceptions.raise_compiler_error(
+        "This database's PCA implementation requires defining the number of principal components"
+        " when data is long formatted. Please set `dbt_pca.pca(ncomp=...)`"
+      ) }}
+    {% elif calculate_in_steps %}
+      {{ exceptions.raise_compiler_error(
+        "When 'calculate_in_steps' is enabled, the number of principal components must be"
+        " defined. Please set `dbt_pca.pca(ncomp=...)`"
+      ) }}
+    {% endif %}
   {% endif %}
 
   {% if output == 'eigenvectors-wide' %}
@@ -196,28 +211,49 @@
     {% do output_options.setdefault('display_eigenvectors', false) %}
   {% endif %}
 
+  {% if inject_config and (table.identifier is undefined or table.is_cte) %}
+    {% if adapter.type() == 'snowflake' %}
+      {% set _error_cond = "When using the Snowflake adapter" %}
+    {% elif adapter.type() == 'clickhouse' %}
+      {% set _error_cond = "When using the Clickhouse adapter with 'calculate_in_steps' enabled" %}
+    {% else %}
+      {% set _error_cond = "When 'calculate_in_steps' is turned on" %}
+    {% endif %}
+    {{ exceptions.raise_compiler_error(
+      _error_cond ~ ", the `table=` input must be either a `ref()` or `source()`"
+      " to a non-ephemeral node."
+    ) }}
+  {% endif %}
+
   {# Dispatch #}
   {# -------- #}
 
-  {% if _materialized == 'pca' and method == 'nipals' %}
-    {{ return(
-      dbt_pca._inject_config_into_materialization(
-        table=table,
-        index=index,
-        columns=columns,
-        values=values,
-        ncomp=ncomp,
-        normalize=normalize,
-        standardize=standardize,
-        demean=demean,
-        missing=missing,
-        weights=weights,
-        output=output,
-        output_options=output_options,
-        method_options=method_options
-      )
-    ) }}
-    {% elif method == 'nipals' %}
+  {% if adapter.type() == 'snowflake' or calculate_in_steps %}
+    {% if method == 'nipals' or (adapter.type() == 'snowflake' and method in ['nipals', 'svd', 'eig']) %}
+      {{ return(
+        adapter.dispatch('_inject_config_into_relation', 'dbt_pca')(
+          table=table,
+          index=index,
+          columns=columns,
+          values=values,
+          ncomp=ncomp,
+          normalize=normalize,
+          standardize=standardize,
+          demean=demean,
+          missing=missing,
+          weights=weights,
+          output=output,
+          output_options=output_options,
+          method_options=method_options,
+          materialization_options=materialization_options
+        )
+      ) }}
+    {% else %}
+      {{ exceptions.raise_compiler_error(
+        "Invalid method specified. Please read the README for more information."
+      ) }}
+    {% endif %}
+  {% elif method == 'nipals' %}
     {{ return(
       dbt_pca._pca_nipals(
         table=table,
@@ -232,12 +268,14 @@
         weights=weights,
         output=output,
         output_options=output_options,
-        method_options=method_options
+        method_options=method_options,
+        materialization_options=materialization_options
       )
     ) }}
   {% else %}
     {{ exceptions.raise_compiler_error(
-      "Invalid method specified. The only valid method is 'nipals'"
+      "Invalid method specified. The only valid method for non-pca materializations is 'nipals'."
+      " Please read the README for more information."
     ) }}
   {% endif %}
 

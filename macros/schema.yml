@@ -113,7 +113,7 @@ macros:
   - name: _get_output_option
     docs:
       show: false
-  - name: _inject_config_into_materialization
+  - name: _inject_config_into_relation
     docs:
       show: false
   - name: _join_predicate
