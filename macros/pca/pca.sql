@@ -126,6 +126,20 @@
 
   {% endif %}
 
+  {% if calculate_in_steps and model.config.materialized in ['ephemeral', 'view'] %}
+    {{ exceptions.raise_compiler_error(
+      "A dbt node calling `dbt_pca.pca()` cannot be a view or an ephemeral model"
+      " when the materialization option `calculate_in_steps` is enabled."
+      " Please materialize `"~model.name~"` as a table or as an incremental model to use `pca()`."
+    ) }}
+  {% elif adapter.type() == 'snowflake' and model.config.materialized in ['ephemeral', 'view'] %}
+    {{ exceptions.raise_compiler_error(
+      "A dbt node calling `dbt_pca.pca()` cannot be a view or an ephemeral model"
+      " with the Snowflake adapter."
+      " Please materialize `"~model.name~"` as a table or as an incremental model to use `pca()`."
+    ) }}
+  {% endif %}
+
   {% if columns is none %}
     {{ exceptions.raise_compiler_error("Missing arg 'columns' for macro `pca()`.") }}
   {% elif columns is string %}

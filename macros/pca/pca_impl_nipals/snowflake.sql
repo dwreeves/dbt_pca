@@ -23,7 +23,7 @@
         identifier=pca_config["table"]["identifier"]
       ) %}
       {% do udf_ddls.append(dbt_pca.create_pca_udtf(
-          table_json=pca_config["table"],
+          table=udf_relation,
           index=pca_config.get('index'),
           columns=pca_config.get('columns'),
           values=pca_config.get('values'),
@@ -110,13 +110,14 @@
                          materialization_options,
                          pca_num)
   -%}
-{% if values is none %}
-  {% set col = ['col'] %}
-{% else %}
-  {% set col = columns %}
-{% endif %}
+{%- if values is none -%}
+  {% set col = [dbt_pca._get_output_option("columns_column_name", output_options, "col")] -%}
+{%- else -%}
+  {%- set col = columns -%}
+{%- endif -%}
+{%- set compcol = dbt_pca._get_output_option("component_column_name", output_options, "comp") -%}
 create or replace function {{ dbt_pca._get_udtf_name(table, materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_signature(table, index, columns, values, materialization_options) }})
-returns table ({{ dbt_pca._get_udtf_return_signature(table, index, columns, values, output, materialization_options, output_options) }})
+returns table ({{ dbt_pca._get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) }})
 language python
 runtime_version = 3.9
 packages=('pandas', 'numpy', 'statsmodels')
@@ -132,14 +133,16 @@ class Pca:
     def end_partition(self, df):
         {%- if values is not none %}
         df = df.pivot(columns=['{{ "', '".join(columns)  }}'], index=['{{ "', '".join(index) }}'], values='{{ values }}')
+        {%- else %}
+        df.columns.name = '{{ col[0] }}'
         {%- endif %}
-        # if wide:
+{#      # if wide:
         #   df = df.pivot(columns=[], index=[], values="")
         # elif index:  # index is list
         #   df = df.set_index(index)
         #
         # if missing == "zero":  # Then set missing = None
-        #   df = df.fillna(0)
+        #   df = df.fillna(0)#}
         pca = PCA(
           df,
           ncomp={{ (ncomp | string).title() }},
@@ -159,12 +162,12 @@ class Pca:
 
         {% if output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'eigenvectors-wide-transposed'] %}
         loadings = pca.loadings.copy()
-        loadings.columns = pd.Index([int(re.search(r'\d+', i).group()) for i in loadings.columns], name="comp")
+        loadings.columns = pd.Index([int(re.search(r'\d+', i).group()) for i in loadings.columns], name="{{ compcol }}")
         loadings = loadings.stack().reset_index().rename(columns={0: "eigenvector"})
         {% endif %}
         {% if output in ['loadings', 'loadings-long', 'loadings-wide', 'coefficients-wide', 'coefficients-wide-transposed'] %}
         coeff = pca.coeff.copy()
-        coeff.index = pd.Index([int(re.search(r'\d+', i).group()) for i in coeff.index], name="comp")
+        coeff.index = pd.Index([int(re.search(r'\d+', i).group()) for i in coeff.index], name="{{ compcol }}")
         while isinstance(coeff, pd.DataFrame):  # Required for multiindexes
             coeff = coeff.stack()
         coeff = coeff.reset_index().rename(columns={0: "coefficient"})
@@ -174,29 +177,29 @@ class Pca:
 
         {% if output in ['loadings', 'loadings-long'] %}
         eigenvals = pca.eigenvals.rename("eigenvalue")
-        loadings = loadings.merge(right=coeff, left_on=["comp", *['{{ "', '".join(col)  }}']], right_on=["comp", *['{{ "', '".join(col)  }}']])
-        res = loadings.merge(right=eigenvals, left_on="comp", right_index=True).sort_values(["comp", *['{{ "', '".join(col)  }}']])[["comp", *['{{ "', '".join(columns)  }}'], "eigenvector", "eigenvalue", "coefficient"]].reset_index(drop=True)
+        loadings = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = loadings.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True).sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "eigenvector", "eigenvalue", "coefficient"]].reset_index(drop=True)
         return res
         {% elif output == 'loadings-wide' %}
-        loadings = loadings.merge(right=coeff, left_on=["comp", *['{{ "', '".join(col)  }}']], right_on=["comp", *['{{ "', '".join(col)  }}']])
-        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["comp"], values=["eigenvector", "coefficient"])
+        loadings = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values=["eigenvector", "coefficient"])
         loadings.columns = [f"{c[0]}_{c[1]}" for c in loadings.columns]
         return loadings.reset_index()
         {% elif output == 'eigenvectors-wide' %}
-        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["comp"], values="eigenvector")
+        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values="eigenvector")
         loadings.columns = [f"eigenvector_{c}" for c in loadings.columns]
         return loadings.reset_index()
         {% elif output == 'eigenvectors-wide-transposed' %}
         {# This will be wide format, so it is guaranteed to not be multi-indexed. #}
-        loadings = loadings.pivot(columns=['{{ "', '".join(col)  }}'], index=["comp"], values="eigenvector")
+        loadings = loadings.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="eigenvector")
         return loadings.reset_index()
         {% elif output == 'coefficients-wide' %}
-        coeff = coeff.pivot(index=['{{ "', '".join(col)  }}'], columns=["comp"], values="coefficient")
+        coeff = coeff.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values="coefficient")
         coeff.columns = [f"coefficient_{c}" for c in loadings.columns]
         return coeff.reset_index()
         {% elif output == 'eigenvectors-wide-transposed' %}
         {# This will be wide format, so it is guaranteed to not be multi-indexed. #}
-        coeff = coeff.pivot(columns=['{{ "', '".join(col)  }}'], index=["comp"], values="coefficient")
+        coeff = coeff.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="coefficient")
         return loadings.reset_index()
         {% endif %}
 $$;

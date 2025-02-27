@@ -55,13 +55,13 @@
   include_iter=true
 ) }},
 
-{%- for compnum in range(ncomp) %}
-{%- set previous = 'dbt_pca_preproc_step2' if compnum == 0 else 'dbt_pca_comp_'~(compnum-1) %}
+{%- for comp_num in range(ncomp) %}
+{%- set previous = 'dbt_pca_preproc_step2' if comp_num == 0 else 'dbt_pca_comp_'~(comp_num-1) %}
 {{ dbt_pca._pca_nipals_single_iteration(
   previous=previous,
   idx=idx,
   cols=cols,
-  compnum=compnum,
+  comp_num=comp_num,
   check_tol=check_tol,
   tol=tol,
   max_iter=max_iter,
@@ -72,8 +72,8 @@
 
 dbt_pca_comps_combined as (
 
-  {%- for compnum in range(ncomp) %}
-  select {{ compnum }} as comp, * from dbt_pca_comp_{{ compnum }}
+  {%- for comp_num in range(ncomp) %}
+  select {{ comp_num }} as comp, * from dbt_pca_comp_{{ comp_num }}
   {% if not loop.last %}union all{% endif %}
   {%- endfor %}
 
@@ -99,13 +99,13 @@ dbt_pca_comps_combined as (
 {% macro clickhouse___pca_nipals_single_iteration(previous,
                                                   idx,
                                                   cols,
-                                                  compnum,
+                                                  comp_num,
                                                   check_tol,
                                                   tol,
                                                   max_iter,
                                                   deterministic_column_seeding,
                                                   _first=true) %}
-dbt_pca_initial_column_{{ compnum }} as (
+dbt_pca_initial_column_{{ comp_num }} as (
 
     {#- Snowflake and Postgres/Redshift handle this correctly.
         DuckDB can be forced to handle this correctly with "materialized" keyword
@@ -130,7 +130,7 @@ dbt_pca_initial_column_{{ compnum }} as (
 
 ),
 
-dbt_pca_factor_t0_{{ compnum }} as (
+dbt_pca_factor_t0_{{ comp_num }} as (
 
   select
     {{ dbt_pca._list_with_alias(idx, 'c') }},
@@ -139,14 +139,14 @@ dbt_pca_factor_t0_{{ compnum }} as (
     {%- endif %}
     c.x
   from {{ previous }} as c
-  inner join dbt_pca_initial_column_{{ compnum }} as a
+  inner join dbt_pca_initial_column_{{ comp_num }} as a
   on {{ dbt_pca._join_predicate(cols, 'c', 'a') }}
 
 ),
 
-dbt_pca_comp_{{ compnum }} as (
+dbt_pca_comp_{{ comp_num }} as (
 
-with recursive _dbt_pca_calc_comp_{{ compnum }} as (
+with recursive _dbt_pca_calc_comp_{{ comp_num }} as (
 
   select
     {{ dbt_pca._list_with_alias(idx, 'd') }},
@@ -163,7 +163,7 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
     d.x,
     0 as _iter
   from {{ previous }} as d
-  inner join dbt_pca_factor_t0_{{ compnum }} as j
+  inner join dbt_pca_factor_t0_{{ comp_num }} as j
   on {{ dbt_pca._join_predicate(idx, 'd', 'j') }}
 
   union all
@@ -178,7 +178,7 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
     cc.x as x,
     cc._iter + 1 as _iter
 
-  from _dbt_pca_calc_comp_{{ compnum }} as cc
+  from _dbt_pca_calc_comp_{{ comp_num }} as cc
   inner join (
 
     select
@@ -199,13 +199,13 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
           sum(d.x * d.factor) / sum(d.factor * d.factor) as vec
         from (
           select *
-          from _dbt_pca_calc_comp_{{ compnum }}
+          from _dbt_pca_calc_comp_{{ comp_num }}
           qualify _iter = max(_iter) over ()
         ) as d
---           from _dbt_pca_calc_comp_{{ compnum }} as d
+--           from _dbt_pca_calc_comp_{{ comp_num }} as d
 --           inner join (
 --             select max(_iter) as _max_iter
---             from _dbt_pca_calc_comp_{{ compnum }}
+--             from _dbt_pca_calc_comp_{{ comp_num }}
 --           ) as m
 --           on d._iter = m._max_iter
         group by {{ cols | join(', ') }}
@@ -217,13 +217,13 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
         {{ cols | join(', ') }},
         {{ idx | join(', ') }},
         x, factor
-      from _dbt_pca_calc_comp_{{ compnum }}
+      from _dbt_pca_calc_comp_{{ comp_num }}
       qualify _iter = max(_iter) over ()
 --         select d.*
---         from _dbt_pca_calc_comp_{{ compnum }} as d
+--         from _dbt_pca_calc_comp_{{ comp_num }} as d
 --         inner join (
 --           select max(_iter) as _max_iter
---           from _dbt_pca_calc_comp_{{ compnum }}
+--           from _dbt_pca_calc_comp_{{ comp_num }}
 --         ) as m
 --         on d._iter = m._max_iter
     ) as d
@@ -239,14 +239,14 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
     select sqrt(sum(pow(c.factor - c.factor_last, 2))) / sqrt(sum(pow(c.factor, 2))) > {{ tol }} as tol_check
     from (
       select {{ cols | join(', ') }}, factor, factor_last, _iter
-      from _dbt_pca_calc_comp_{{ compnum }}
+      from _dbt_pca_calc_comp_{{ comp_num }}
       qualify _iter = max(_iter) over ()
     ) as c
-    inner join dbt_pca_initial_column_{{ compnum }} as a
+    inner join dbt_pca_initial_column_{{ comp_num }} as a
     on {{ dbt_pca._join_predicate(cols, 'c', 'a') }}
 --       inner join (
 --         select max(_iter) as _max_iter
---         from _dbt_pca_calc_comp_{{ compnum }}
+--         from _dbt_pca_calc_comp_{{ comp_num }}
 --       ) as m
 --       on c._iter = m._max_iter
   ) as fl
@@ -264,7 +264,7 @@ with recursive _dbt_pca_calc_comp_{{ compnum }} as (
       d.eigenvector,
       d.x - d.factor * d.eigenvector as x,
       d._iter
-  from _dbt_pca_calc_comp_{{ compnum }} as d
+  from _dbt_pca_calc_comp_{{ comp_num }} as d
   qualify _iter = max(_iter) over ()
 
 )

@@ -66,15 +66,14 @@
                                 method_options,
                                 materialization_options) %}
   {{ exceptions.raise_not_implemented(
-    "The Snowflake adapter requires the 'pca' materialization to run the pca() macro."
-    " Please set materialized='pca' in your model config."
+    "The Snowflake adapter does not support a pure SQL implementation of PCA."
   ) }}
 {% endmacro %}
 
 {% macro _pca_nipals_single_iteration(previous,
                                       idx,
                                       cols,
-                                      compnum,
+                                      comp_num,
                                       check_tol,
                                       tol,
                                       max_iter,
@@ -85,7 +84,7 @@
       previous=previous,
       idx=idx,
       cols=cols,
-      compnum=compnum,
+      comp_num=comp_num,
       check_tol=check_tol,
       tol=tol,
       max_iter=max_iter,
@@ -98,7 +97,7 @@
 {% macro default___pca_nipals_single_iteration(previous,
                                                idx,
                                                cols,
-                                               compnum,
+                                               comp_num,
                                                check_tol,
                                                tol,
                                                max_iter,
@@ -110,7 +109,7 @@
       previous=previous,
       idx=idx,
       cols=cols,
-      compnum=compnum,
+      comp_num=comp_num,
       check_tol=check_tol,
       tol=tol,
       max_iter=max_iter,

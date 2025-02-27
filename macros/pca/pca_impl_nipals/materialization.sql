@@ -19,7 +19,7 @@
         {% break %}
       {% endif %}
       {% do all_statements.append(dbt_pca._drop_table(possible_tmp_relation)) %}
-    {% for _compnum_check in range(1, 100000) %}
+    {% for _comp_num_check in range(1, 100000) %}
       {% set possible_tmp_relation = make_intermediate_relation(target_relation, suffix=dbt_pca._temp_table_suffix(_count_check, 0)) %}
       {% set possible_tmp_relation = adapter.get_relation(
         database=possible_tmp_relation.database,
@@ -49,8 +49,8 @@
         schema=pca_config["table"]["schema"],
         identifier=pca_config["table"]["identifier"]
       ) %}
-      {% for compnum in range(pca_config["ncomp"]) %}
-        {% set comp_relation = make_intermediate_relation(target_relation, suffix=dbt_pca._temp_table_suffix(count, compnum)) %}
+      {% for comp_num in range(pca_config["ncomp"]) %}
+        {% set comp_relation = make_intermediate_relation(target_relation, suffix=dbt_pca._temp_table_suffix(count, comp_num)) %}
         {% do comp_relations.append(comp_relation) %}
         {#{% do all_statements.append(dbt_pca._drop_table(comp_relation)) %}#}
         {% do log('Creating temp relation query '~comp_relation) %}
@@ -68,7 +68,7 @@
           output=pca_config.get("output"),
           output_options=pca_config.get("output_options"),
           method_options=pca_config.get("method_options"),
-          compnum=compnum,
+          comp_num=comp_num,
           count=count) %}
         {% do all_statements.append(dbt_pca._get_create_table_as_sql(True, comp_relation, _sql)) %}
       {% endfor %}
@@ -89,6 +89,7 @@
         output=pca_config.get("output"),
         output_options=pca_config.get("output_options"),
         method_options=pca_config.get("method_options"),
+        materialization_options=pca_config.get("materialization_options"),
         count=count) %}
       {% do all_statements.append(dbt_pca._get_create_table_as_sql(True, combined_comp_relation, _sql)) %}
       {#{% for rel in (comp_relations | reverse) %}
@@ -180,26 +181,8 @@
     "method_options": method_options,
     "materialization_options": materialization_options
   } %}
-  {% set sql = dbt_pca.create_pca_udtf(
-      table_json=table,
-      index=index,
-      columns=columns,
-      values=values,
-      ncomp=ncomp,
-      normalize=normalize,
-      standardize=standardize,
-      demean=demean,
-      missing=missing,
-      weights=weights,
-      output=output,
-      output_options=output_options,
-      method=method,
-      method_options=method_options,
-      materialization_options=materialization_options,
-      pca_num=pca_num
-  ) %}
   {% do config(
-    pre_hook=[{"sql": sql, "transaction": true}]
+    pre_hook=[{"sql": '{{ dbt_pca.snowflake__create_pca_udf(pca_num='~pca_num~') }}', "transaction": true}]
   ) %}
   {% if dbt_pca._get_materialization_option('drop_udf', materialization_options, true) %}
     {% set arg_data = dbt_pca._get_udtf_function_signature_data(
@@ -245,6 +228,38 @@
 {{ return(final_query) }}
 {% endmacro %}
 
+{% macro snowflake__create_pca_udf(pca_num) %}
+  {% if 'compiled_code' not in model %}
+    {{ return('select 1 /* dbt_pca.snowflake__create_pca_udf(pca_num='~pca_num~') */;') }}
+  {% endif %}
+  {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
+  {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
+  {% set input_relation = adapter.get_relation(
+    database=pca_config["table"]["database"],
+    schema=pca_config["table"]["schema"],
+    identifier=pca_config["table"]["identifier"]
+  ) %}
+  {% set _sql = dbt_pca.create_pca_udtf(
+    table=input_relation,
+    index=pca_config.get("index"),
+    columns=pca_config.get("columns"),
+    values=pca_config.get("values"),
+    ncomp=pca_config.get("ncomp"),
+    normalize=pca_config.get("normalize"),
+    standardize=pca_config.get("standardize"),
+    demean=pca_config.get("demean"),
+    missing=pca_config.get("missing"),
+    weights=pca_config.get("weights"),
+    output=pca_config.get("output"),
+    output_options=pca_config.get("output_options"),
+    method=pca_config.get("method"),
+    method_options=pca_config.get("method_options"),
+    materialization_options=pca_config.get("materialization_options"),
+    pca_num=pca_num
+  ) %}
+  {{ return(_sql) }}
+{% endmacro %}
+
 {% macro default___inject_config_into_relation(table,
                                                index=none,
                                                columns=none,
@@ -269,47 +284,16 @@
   {% endif %}
   {% do store_result('__dbt_pca__pca_num', pca_num) %}
   {% set injected_pre_hooks = [] %}
-  {% for compnum in range(ncomp) %}
-    {% set comp_relation = make_intermediate_relation(table, suffix=dbt_pca._temp_table_suffix(pca_count, compnum)
-    ) %}
-    {% do log('Creating temp relation query '~comp_relation) %}
-    {% set _sql = dbt_pca._pca_tmp_table(
-      table=table,
-      index=index,
-      columns=columns,
-      values=values,
-      ncomp=ncomp,
-      normalize=normalize,
-      standardize=standardize,
-      demean=demean,
-      missing=missing,
-      weights=weights,
-      output=output,
-      output_options=output_options,
-      method_options=method_options,
-      compnum=compnum,
-      pca_num=pca_num) %}
-    {% do injected_pre_hooks.append({"sql": dbt_pca._get_create_table_as_sql(True, comp_relation, _sql), "transaction": true}) %}
+  {% for comp_num in range(ncomp) %}
+    {% do injected_pre_hooks.append({
+      "sql": "{{ dbt_pca.calculate_comp(pca_num="~pca_num~", comp_num="~comp_num~") }}",
+      "transaction": true
+    }) %}
   {% endfor %}
-  {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
-  {% set combined_comp_relation = make_intermediate_relation(table, suffix=final_suffix) %}
-  {% set _sql = dbt_pca._pca_tmp_table_final(
-    table=table,
-    index=index,
-    columns=columns,
-    values=values,
-    ncomp=ncomp,
-    normalize=normalize,
-    standardize=standardize,
-    demean=demean,
-    missing=missing,
-    weights=weights,
-    output=output,
-    output_options=output_options,
-    method_options=method_options,
-    pca_num=pca_num
-  ) %}
-  {% do injected_pre_hooks.append(dbt_pca._get_create_table_as_sql(True, combined_comp_relation, _sql)) %}
+  {% do injected_pre_hooks.append({
+    "sql": "{{ dbt_pca.calculate_final(pca_num="~pca_num~") }}",
+    "transaction": true
+  }) %}
   {{ config(pre_hook=injected_pre_hooks) }}
   {% set dbt_pca_config = {
     "table": {
@@ -342,6 +326,83 @@
 )
   {%- endset %}
   {{ return(final_query) }}
+{% endmacro %}
+
+{% macro retrieve_injected_config(pca_num) %}
+  {% for row in model['compiled_code'].split("\n") %}
+    {% if row.lstrip().startswith("-- !DBT_PCA_CONFIG") %}
+      {% set comp_relations = [] %}
+      {% set parsed_row = row.strip().replace("-- !DBT_PCA_CONFIG:", "", 1) %}
+      {% set __pca_num = (parsed_row[:3] | int) %}
+      {% if __pca_num == pca_num %}
+        {{ return(fromjson(parsed_row[4:])) }}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro calculate_comp(comp_num, pca_num) %}
+  {% if 'compiled_code' not in model %}
+    {{ return('select 1 /* dbt_pca.calculate_comp(comp_num='~comp_num~', pca_num='~pca_num~') */;') }}
+  {% endif %}
+  {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
+  {% set input_relation = adapter.get_relation(
+    database=pca_config["table"]["database"],
+    schema=pca_config["table"]["schema"],
+    identifier=pca_config["table"]["identifier"]
+  ) %}
+  {% set comp_relation = make_intermediate_relation(this, suffix=dbt_pca._temp_table_suffix(pca_count, comp_num)) %}
+  {% do log('Creating temp relation '~comp_relation) %}
+  {% set _sql = dbt_pca._pca_tmp_table(
+    table=input_relation,
+    index=pca_config.get("index"),
+    columns=pca_config.get("columns"),
+    values=pca_config.get("values"),
+    ncomp=pca_config.get("ncomp"),
+    normalize=pca_config.get("normalize"),
+    standardize=pca_config.get("standardize"),
+    demean=pca_config.get("demean"),
+    missing=pca_config.get("missing"),
+    weights=pca_config.get("weights"),
+    output=pca_config.get("output"),
+    output_options=pca_config.get("output_options"),
+    method_options=pca_config.get("method_options"),
+    comp_num=comp_num,
+    pca_num=pca_num
+  ) %}
+  {{ return(dbt_pca._get_create_table_as_sql(True, comp_relation, _sql)) }}
+{% endmacro %}
+
+{% macro calculate_final(pca_num) %}
+  {% if 'compiled_code' not in model %}
+    {{ return('select 1 /* dbt_pca.calculate_final(pca_num='~pca_num~') */;') }}
+  {% endif %}
+  {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
+  {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
+  {% set input_relation = adapter.get_relation(
+    database=pca_config["table"]["database"],
+    schema=pca_config["table"]["schema"],
+    identifier=pca_config["table"]["identifier"]
+  ) %}
+  {% set combined_comp_relation = make_intermediate_relation(this, suffix=final_suffix) %}
+  {% set _sql = dbt_pca._pca_tmp_table_final(
+    table=input_relation,
+    index=pca_config.get("index"),
+    columns=pca_config.get("columns"),
+    values=pca_config.get("values"),
+    ncomp=pca_config.get("ncomp"),
+    normalize=pca_config.get("normalize"),
+    standardize=pca_config.get("standardize"),
+    demean=pca_config.get("demean"),
+    missing=pca_config.get("missing"),
+    weights=pca_config.get("weights"),
+    output=pca_config.get("output"),
+    output_options=pca_config.get("output_options"),
+    method_options=pca_config.get("method_options"),
+    materialization_options=pca_config.get("materialization_options"),
+    pca_num=pca_num
+  ) %}
+  {{ return(dbt_pca._get_create_table_as_sql(True, combined_comp_relation, _sql)) }}
 {% endmacro %}
 
 {% macro _get_udtf_function_args(index, columns, values, cast_types=false, arg_data=none) %}
@@ -464,8 +525,7 @@
   {% endif %}
 {% endmacro %}
 
-{% macro _get_udtf_return_signature(table, index, columns, values, output, materialization_options, output_options) %}
-  {{ return('comp integer, col varchar, eigenvector float, eigenvalue float, coefficient float') }}
+{% macro _get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) %}
   {# Snowflake does not allow generic typing for UDFs except via function overloading.
      We can cast types to varchar and that works OK for loadings outputs.
      However, it causes issues for other types of outputs because the type.
@@ -477,7 +537,7 @@
   {% set requires_columns_as_pk = output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'coefficients-wide', 'projections', 'projections-long'] %}
   {% set requires_index = output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
   {% if
-      true
+    true
   %}
     {# In this case, not all types are explicitly defined, so we want to attempt
        querying the database for the types. #}
@@ -487,12 +547,12 @@
       {% do rel_columns_mapping.update({c.column: c.dtype}) %}
     {% endfor %}
   {% endif %}
-  {% set li = [] %}
+  {% set comp_li = [] %}
   {% set columns_li = [] %}
   {% set index_li = [] %}
   {% set other_li = [] %}
   {% if output in ['loadings', 'loadings-long', 'eigenvectors-wide-transposed', 'coefficients-wide-transposed', 'factors', 'factors-long'] %}
-    {% do li.append(dbt_pca._get_output_option("component_column_name", output_options, "comp") ~ ' integer') %}
+    {% do comp_li.append(dbt_pca._get_output_option("component_column_name", output_options, "comp") ~ ' integer') %}
   {% endif %}
   {% if requires_columns_as_pk and values is none %}
     {% do columns_li.append(dbt_pca._get_output_option("column_column_name", output_options, "col") ~ ' varchar') %}
@@ -526,22 +586,47 @@
       {% else %}
         {% set typ = 'varchar' %}
       {% endif %}
-      {% do li.append(adapter.quote(i) ~ ' ' ~ typ) %}
+      {% do index_li.append(i ~ ' ' ~ typ) %}
     {% endfor %}
   {% endif %}
-  {% if values is not none %}
-    {% if values_type %}
-      {% set typ = values_type %}
-    {% elif values in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(values) %}
-    {% elif values.lower() in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(values.lower()) %}
-    {% else %}
-      {% set typ = 'float' %}
+
+  {% if output in ['loadings', 'loadings-long'] %}
+    {% if dbt_pca._get_output_option("display_eigenvalues", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") ~ ' float') %}
     {% endif %}
-    {% do li.append(adapter.quote(values) ~ ' ' ~ typ) %}
+    {% if dbt_pca._get_output_option("display_eigenvectors", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("eigenvalue_column_name", output_options, "eigenvalue") ~ ' float') %}
+    {% endif %}
+    {% if dbt_pca._get_output_option("display_coefficients", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("coefficient_column_name", output_options, "coefficient") ~ ' float') %}
+    {% endif %}
+  {% elif output in ['loadings-wide', 'eigenvectors-wide', 'coefficients-wide'] %}
+    {% if dbt_pca._get_output_option("display_eigenvalues", output_options, true) %}
+      {% for i in range(ncomp) %}
+        {% do other_li.append(dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") ~'_'~i ~ ' float') %}
+      {% endfor %}
+    {% endif %}
+    {% if dbt_pca._get_output_option("display_coefficients", output_options, true) %}
+      {% for i in range(ncomp) %}
+        {% do other_li.append(dbt_pca._get_output_option("coefficient_column_name", output_options, "coefficient") ~'_'~i ~ ' float') %}
+      {% endfor %}
+    {% endif %}
+  {% elif output in ['factors', 'factors-long'] %}
+    {% do other_li.append(dbt_pca._get_output_option("factor_column_name", output_options, "factor") ~'_'~i ~ ' float') %}
+  {% elif output in ['factors-wide'] %}
+    {% for i in range(ncomp) %}
+      {% do other_li.append(dbt_pca._get_output_option("factor_column_name", output_options, "factor") ~'_'~i ~ ' float') %}
+    {% endfor %}
+  {% elif output in ['projections', 'projections-long'] %}
+    {% do other_li.append(dbt_pca._get_output_option("projection_column_name", output_options, "projection") ~'_'~i ~ ' float') %}
   {% endif %}
-  {{ return(', '.join(li)) }}
+
+  {% if output in ['projections-wide', 'projections-wide-untransformed'] %}
+    {{ return(', '.join(index_li + columns_li)) }}
+  {% else %}
+    {{ return(', '.join(comp_li + columns_li + index_li + other_li)) }}
+  {% endif %}
+
 {% endmacro %}
 
 {###############################################################################
@@ -561,7 +646,7 @@
                         output,
                         output_options,
                         method_options,
-                        compnum,
+                        comp_num,
                         pca_num) %}
 {% set long = ((values is not none) | as_bool) %}
 {%- set cols = dbt_pca._alias_columns_to_list(columns) if long else ['col'] %}
@@ -583,10 +668,10 @@
 {%- if ncomp is none %}
   {% set ncomp = (columns | length) %}
 {%- endif %}
-{%- if compnum == 0 %}
+{%- if comp_num == 0 %}
   {%- set previous = 'dbt_pca_preproc_step2' %}
 {%- else %}
-  {% set previous = dbt_pca._single_comp_temp_table_quoted_name(pca_num, compnum - 1) %}
+  {% set previous = dbt_pca._single_comp_temp_table_quoted_name(pca_num, comp_num - 1) %}
 {%- endif %}
 with recursive
 
@@ -613,14 +698,14 @@ with recursive
   previous=previous,
   idx=idx,
   cols=cols,
-  compnum=compnum,
+  comp_num=comp_num,
   check_tol=check_tol,
   tol=tol,
   max_iter=max_iter,
   deterministic_column_seeding=deterministic_column_seeding,
 ) }}
 
-select * from dbt_pca_comp_{{ compnum }}
+select * from dbt_pca_comp_{{ comp_num }}
 {% endmacro %}
 
 {% macro _pca_tmp_table_final(table,
@@ -636,6 +721,7 @@ select * from dbt_pca_comp_{{ compnum }}
                               output,
                               output_options,
                               method_options,
+                              materialization_options,
                               pca_num) %}
 {% set long = ((values is not none) | as_bool) %}
 {%- set cols = dbt_pca._alias_columns_to_list(columns) if long else ['col'] %}
@@ -664,8 +750,8 @@ with
 {%- endif %}
 dbt_pca_comps_combined as (
 
-  {%- for compnum in range(ncomp) %}
-  select {{ compnum }} as comp, * from {{ dbt_pca._single_comp_temp_table_quoted_name(pca_num, compnum) }}
+  {%- for comp_num in range(ncomp) %}
+  select {{ comp_num }} as comp, * from {{ dbt_pca._single_comp_temp_table_quoted_name(pca_num, comp_num) }}
   {% if not loop.last %}union all{% endif %}
   {%- endfor %}
 

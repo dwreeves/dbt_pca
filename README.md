@@ -9,6 +9,7 @@
 > - Snowflake support
 > - User facing conversion functions for eigenvectors --> factors + projections.
 > - (Maybe) Fuller, paginated documentation on Github Pages.
+> - ~~Remove custom materialization~~
 
 <p align="center">
     <picture>
@@ -48,7 +49,7 @@ Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
   - package: "dwreeves/dbt_linreg"
-    version: "0.0.1"
+    version: "0.0.2"
 ```
 
 The full file will look something like this:
@@ -59,7 +60,7 @@ packages:
   # Other packages here
   # ...
   - package: "dwreeves/dbt_linreg"
-    version: "0.0.1"
+    version: "0.0.2"
 ```
 
 # Examples
@@ -335,23 +336,6 @@ Where:
 Names for function arguments and concepts vary across PCA implementations in different languages and frameworks.
 **In this library, all names and concepts are equivalent to those in Statsmodels.**
 
-### `{{ config(materialized='pca') }}`
-
-**dbt_pca** comes with an optional materialization method called `'pca'`.
-
-The `'pca'` materialization is recommended if:
-
-- Almost always if are using Clickhouse.
-
-The `'pca'` is _**not**_ recommended if:
-
-- You are running DuckDB, and haven't yet run into any issues with dbt's built-in materializations like `'table'`, `'incremental'`, etc.
-
-This materialization method bypasses some runtime performance limitations (the most notable being Clickhouse not materializing CTEs) by generating components as a series of tables written to the database.
-So when this materialization runs with `dbt run`, it actually writes a lot of tables to generate the components instead of doing it in a single shot.
-
-For the most part, the `'pca'` materialization can do the same things that materializing as a table can. The most notable exception is the `table=...` passed to `dbt_pca.pca()` (i.e. first arg) _must_ be either a `ref()` or a `source()`, and additionally the `ref()` cannot be to an ephemeral model.
-
 # Outputs and output options
 
 <table>
@@ -543,7 +527,7 @@ Specify these in a dict using the `method_options=` kwarg:
 - **tol** (`bool`; default: `5e-8`) - Tolerance to use when checking for convergence.
 - **deterministic_column_seeding** (`bool`; default: `False`) - If True, seed the initial column in a factor calculation with the alphanumerically first column. This guarantees the sign of the eigenvector even when normalized, but is significantly slower to converge. It is strongly recommended to keep this turned off.
 
-Some default values vary based on the database engine being used, and whether `materialized='pca'` is set.
+Some default values vary based on the database engine being used, and whether `calculate_in_steps` is enabled.
 
 ## Setting method options globally
 
@@ -558,41 +542,59 @@ vars:
         max_iter: 300
 ```
 
-# Performance optimization
+# Performance
 
 **Please [open an issue on Github](https://github.com/dwreeves/dbt_pca/issues) if you experience any performance problems.**
 I am still ironing things out a bit.
 
-### DuckDB performance optimization
+### DuckDB performance
 
-The performance for DuckDB is blazing fast, and users should generally not have any issues with DuckDB.
+The performance for DuckDB is very fast, and users should generally not have any issues with DuckDB.
 In testing, values are asserted to equal the Statsmodels implementation of PCA with a very high level of precision,
 and the test cases run very quickly.
 
-In DuckDB, it is generally recommended you do **_not_** start with the `'pca'` materialization unless you run into issues.
-
 ### Clickhouse performance optimization
 
-The most performant way to run `{{ dbt_pca.pca() }}` inside Clickhouse is to use the `'pca'` materialization:
+Clickhouse is made performant by calculating individual steps in temporary tables.
+This is because Clickhouse does not support materialized CTEs (although this feature is scheduled to come out in 2025),
+which means expensive calculations are calculated redundantly multiple times as the number of principal components increases.
+
+By default, the `calculate_in_steps` materialization option is turned on for Clickhouse.
+But `calculate_in_steps` only works when `table=...` is a `ref()` or `source()` to a non-ephemeral node.
+For example, the following code works, but will be non-performant because it references a CTE:
 
 ```sql
-{{
-  config(
-    materialized='pca'
-  )
-}}
+with my_cte as (select * from {{ ref("my_table") }})
+
+select * from {{ dbt_pca.pca(
+    table="my_cte",
+    index="index",
+    columns="col",
+    values="val",
+    ncomp=10
+) }}
 ```
 
-**Without the `'pca'` materialization method, `pca()` still works in Clickhouse, but the implementation gets parabolically slower as `ncomp` increases.**
+It would be better to write the code like this, so long as `ref("my_table")` is not ephemeral (views are OK):
+
+```sql
+select * from {{ dbt_pca.pca(
+    table=ref("my_table"),
+    index="index",
+    columns="col",
+    values="val",
+    ncomp=10
+) }}
+```
 
 Clickhouse also has some other performance considerations.
-The `max_iter` is set to 150 (100 without `materialized='pca'`), which is lower than in DuckDB and achieves an accuracy of `10e-6`, which is also lower than DuckDB.
+The `max_iter` is set to 150 (100 without `calculate_in_steps`), which is lower than in DuckDB and achieves an accuracy of `10e-6`, which is also lower than DuckDB.
 This `max_iter` was chosen to play nicely with Clickhouse's default `max_recursive_cte_evaluation_depth` of 1000, however you can adjust this through a pre-hook:
 
 ```sql
 {{
   config(
-    materialized='pca',
+    materialized='table',
     pre_hook='set max_recursive_cte_evaluation_depth = 5000;'
   )
 }}
@@ -628,18 +630,22 @@ I will continue to maintain this project going forward, but this project was a l
 
 ### How does this work?
 
-PCA via the NIPALS method can be implemented with nested recursive CTEs.
+PCA via the NIPALS method can be implemented in SQL with nested recursive CTEs. This is how PCA is implemented in DuckDB and Clickhouse.
 The `pca()` macro generates SQL containing a fairly straightforward implementation of the [steps outlined here](https://cran.r-project.org/web/packages/nipals/vignettes/nipals_algorithm.html).
-Unlike my other library [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg) no Jinja2 trickery is required for the core implementation.
-I am a little surprised myself that I could not find any attempts at implementing this online, even though the does not require
+Unlike my other library [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg) no Jinja2 trickery (so to speak) is required for the core implementation.
+
+The Snowflake implementation just wraps Statsmodels directly as a UDTF, although it is formatted to have the exact same API as DuckDB and Clickhouse.
 
 All approaches were validated using Statsmodels `sm.PCA()`.
 
+One more note about the implementations for Clickhouse and Snowflake: these implementations use some cool pre-hook injection tricks to work.
+Basically, when you call `{{ dbt_pca.pca() }}`, under the hood, a `config()` call occurs which injects a pre-hook that generates SQL to create temp tables (Clickhouse) or a Python UDF (Snowflake).
+Due to weird limitations of how dbt works, these calculations require reading from a comment injected into the compiled SQL: basically, all the args to `pca()` are serialized as a JSON and then deserialized during pre-hook evaluation.
+Amusingly and perhaps counterintuitively, I found that making this under-the-hood process smooth and user-friendly was a lot harder and more time consuming than the SQL-based PCA implementation itself.
+
 ### Should I pre-process my wide data into long data (or vice-versa)?
 
-**dbt_pca**'s implementation of PCA is optimized for long-formatted data. That said, I generally recommend not bothering to preprocess your data into long format if it's naturally wide, unless you have a good reason. **dbt_pca**'s wide-to-long conversion is perfectly optimal as-is, so just do whatever is easiest.
-
-Definitely **do not** take data that is already long-formatted and convert it into wide-formatted data! Because **dbt_pca** already works best with long-formatted data, this would be terribly inefficient.
+**dbt_pca**'s implementation of PCA is optimized for long-formatted data in DuckDB and Clickhouse, and optimized for wide-formatted data in Snowflake. That said, I generally recommend not bothering to preprocess your data into long format if it's naturally wide, unless you have a good reason. **dbt_pca**'s wide-to-long conversion is perfectly optimal as-is, so just do whatever is easiest.
 
 # Development
 

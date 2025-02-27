@@ -26,6 +26,8 @@ function docker-run-clickhouse {
       -p 8123:8123 \
       --name dbt-pca-clickhouse \
       --ulimit nofile=262144:262144 \
+      -v ./clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml \
+      -v ./clickhouse/config.xml:/etc/clickhouse-server/config.d/config.xml \
       clickhouse/clickhouse-server \
       || docker start dbt-pca-clickhouse
 }
@@ -67,7 +69,7 @@ function test {
   uv run scripts.py gen-test-cases
   dbt deps --target "${target}"
   dbt seed --target "${target}"
-  dbt run --target "${target}" --selector "${target}-selector" --vars # '{"test_case_materialization": "'"${materialization}"'"}'
+  dbt run --target "${target}" --selector "${target}-selector" --no-partial-parse
   dbt test --target "${target}" --selector "${target}-selector" --store-failures
 
 }

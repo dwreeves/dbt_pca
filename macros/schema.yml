@@ -69,22 +69,6 @@ macros:
       - name: method_options
         type: dict
         description: See **Methods and method options** section of the README for more.
-  - name: materialization_pca_default
-    description: |-
-      **dbt_pca** comes with an optional materialization method called `'pca'`.
-
-      The `'pca'` materialization is recommended if:
-
-      - Almost always if are using Clickhouse.
-
-      The `'pca'` is _**not**_ recommended if:
-
-      - You are running DuckDB, and haven't yet run into any issues with dbt's built-in materializations like `'table'`, `'incremental'`, etc.
-
-      This materialization method bypasses some runtime performance limitations (the most notable being Clickhouse not materializing CTEs) by generating components as a series of tables written to the database.
-      So when this materialization runs with `dbt run`, it actually writes a lot of tables to generate the components instead of doing it in a single shot.
-
-      For the most part, the `'pca'` materialization can do the same things that materializing as a table can. The most notable exception is the `table=...` passed to `dbt_pca.pca()` (i.e. first arg) _must_ be either a `ref()` or a `source()`, and additionally the `ref()` cannot be to an ephemeral model.
 
   # Everything down here is just for intermediary calculations or helper functions.
   # There is no point to showing these in the docs.
@@ -111,9 +95,6 @@ macros:
     docs:
       show: false
   - name: _get_output_option
-    docs:
-      show: false
-  - name: _inject_config_into_relation
     docs:
       show: false
   - name: _join_predicate
