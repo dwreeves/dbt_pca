@@ -61,7 +61,7 @@ dbt-core `>=1.4.0` is required to install `dbt_pca`.
 Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
-  - package: "dwreeves/dbt_linreg"
+  - package: "dwreeves/dbt_pca"
     version: "0.0.2"
 ```
 
@@ -72,7 +72,7 @@ packages:
   # ...
   # Other packages here
   # ...
-  - package: "dwreeves/dbt_linreg"
+  - package: "dwreeves/dbt_pca"
     version: "0.0.2"
 ```
 
@@ -630,7 +630,7 @@ I will continue to maintain this project going forward, but this project was a l
 
 PCA via the NIPALS method can be implemented in SQL with nested recursive CTEs. This is how PCA is implemented in DuckDB and Clickhouse.
 The `pca()` macro generates SQL containing a fairly straightforward implementation of the [steps outlined here](https://cran.r-project.org/web/packages/nipals/vignettes/nipals_algorithm.html).
-Unlike my other library [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg) no Jinja2 trickery (so to speak) is required for the core implementation.
+Unlike my other library [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg) no Jinja2 trickery (so to speak) is required to build the SQL for the core implementation.
 
 The Snowflake implementation just wraps Statsmodels directly as a UDTF, although it is formatted to have the exact same API as DuckDB and Clickhouse.
 
