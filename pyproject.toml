@@ -2,7 +2,7 @@
 name = "dbt_pca"
 requires-python = "~=3.11"
 description = "dbt_pca dbt package"
-version = "0.0.1"
+version = "0.0.2"
 readme = "README.md"
 authors = ["Daniel Reeves"]
 
@@ -26,6 +26,7 @@ duckdb = [
     "dbt-duckdb",
     "duckdb>=1.1.3",
 ]
+# Postgres currently not supported
 postgres = [
     "dbt-core",
     "dbt-postgres",

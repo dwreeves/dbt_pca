@@ -200,11 +200,6 @@ select
   max(case when e.comp = {{ i }} then e.eigenvector end) as {{ dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") ~'_'~i }}{% if not loop.last or dbt_pca._get_output_option("display_eigenvalues", output_options, true) or dbt_pca._get_output_option("display_coefficients", output_options, true) %},{% endif %}
   {%- endfor %}
   {%- endif %}
-  {%- if dbt_pca._get_output_option("display_eigenvalues", output_options, false) %}
-  {%- for i in range(ncomp) %}
-  max(case when e.comp = {{ i }} then e.eigenvalue end) as {{ dbt_pca._get_output_option("eigenvalue_column_name", output_options, "eigenvalue") ~'_'~i }}{% if not loop.last or dbt_pca._get_output_option("display_coefficients", output_options, true) %},{% endif %}
-  {%- endfor %}
-  {%- endif %}
   {%- if dbt_pca._get_output_option("display_coefficients", output_options, true) %}
   {%- for i in range(ncomp) %}
   max(case when e.comp = {{ i }} then e.coefficient end) as {{ dbt_pca._get_output_option("eigenvalue_column_name", output_options, "coefficient") ~'_'~i }}{% if not loop.last %},{% endif %}
@@ -326,6 +321,41 @@ order by {{ dbt_pca._list_with_alias(idx, 'p') }}
 {%- endif %}
 {%- endif %}
 {%- endmacro %}
+
+{###############################################################################
+## Adapter specific handlers
+###############################################################################}
+
+{% macro _get_create_table_as_sql(temporary, relation, sql) -%}
+  {# dbt-clickhouse does not implement create_table_as correctly. #}
+  {% if adapter.type() == 'clickhouse' %}
+    {% set create_query %}
+      create {% if temporary: -%}temporary{%- endif %} table
+        {{ relation.include(database=false, schema=(not temporary)) }}
+      {% set contract_config = config.get('contract') %}
+      {% if contract_config.enforced and (not temporary) %}
+        {{ get_assert_columns_equivalent(sql) }}
+        {{ get_table_columns_and_constraints() }}
+        {%- set sql = get_select_subquery(sql) %}
+      {% endif %}
+      Engine=Log
+      as (
+        {{ sql }}
+      )
+    {% endset %}
+    {{ return(create_query) }}
+  {% else %}
+    {{ return(create_table_as(temporary, relation, sql)) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro _drop_table(relation) -%}
+  {% if adapter.type() == 'clickhouse' %}
+    {{ return('drop table if exists ' ~ relation.render()) }}
+  {% else %}
+    {{ return(drop_table(relation)) }}
+  {% endif %}
+{% endmacro -%}
 
 {###############################################################################
 ## Misc.

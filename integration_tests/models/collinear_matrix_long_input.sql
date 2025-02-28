@@ -4,6 +4,6 @@ select * from {{
     index='my_index_column',
     columns='my_columns_column',
     values='my_values_column',
-    ncomp=5 if adapter.type() == 'clickhouse' or model.config.materialized == 'pca' else none
+    ncomp=5 if adapter.type() == 'clickhouse' else none
   )
 }}

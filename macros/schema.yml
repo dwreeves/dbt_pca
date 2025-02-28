@@ -65,7 +65,7 @@ macros:
         description: See **Outputs and output options** section of the README for more.
       - name: method
         type: string
-        description: The method used to calculate the regression. Currently only `'nipals'` is supported. See **Methods and method options** for more.
+        description: The method used to calculate the regression. Currently only `'nipals'` is supported in non-Snowflake databases; `'eig'` and `'svd'` are additionally supported in Snowflake. See **Methods and method options** for more.
       - name: method_options
         type: dict
         description: See **Methods and method options** section of the README for more.
@@ -91,10 +91,34 @@ macros:
   - name: _alias_index_to_list
     docs:
       show: false
+  - name: _drop_table
+    docs:
+      show: false
+  - name: _get_create_table_as_sql
+    docs:
+      show: false
+  - name: _get_materialization_option
+    docs:
+      show: false
   - name: _get_method_option
     docs:
       show: false
   - name: _get_output_option
+    docs:
+      show: false
+  - name: _get_udtf_function_args
+    docs:
+      show: false
+  - name: _get_udtf_function_signature
+    docs:
+      show: false
+  - name: _get_udtf_function_signature_data
+    docs:
+      show: false
+  - name: _get_udtf_name
+    docs:
+      show: false
+  - name: _get_udtf_return_signature
     docs:
       show: false
   - name: _join_predicate
@@ -130,10 +154,22 @@ macros:
   - name: _unalias_index
     docs:
       show: false
+  - name: calculate_comp
+    docs:
+      show: false
+  - name: calculate_final
+    docs:
+      show: false
   - name: clickhouse___pca_nipals
     docs:
       show: false
   - name: clickhouse___pca_nipals_single_iteration
+    docs:
+      show: false
+  - name: create_pca_udtf
+    docs:
+      show: false
+  - name: default___inject_config_into_relation
     docs:
       show: false
   - name: default___pca_nipals
@@ -152,5 +188,17 @@ macros:
     docs:
       show: false
   - name: preproc_step_2_cte
+    docs:
+      show: false
+  - name: retrieve_injected_config
+    docs:
+      show: false
+  - name: snowflake___inject_config_into_relation
+    docs:
+      show: false
+  - name: snowflake___pca_nipals
+    docs:
+      show: false
+  - name: snowflake__create_pca_udf
     docs:
       show: false

@@ -11,10 +11,11 @@ macro-paths: ["macros"]
 log-path: "logs"
 
 vars:
-  test_precision: '{{ "10e-7" if target.name == "duckdb" else "10e-6" if target.name == "clickhouse" and var("materialized", "table") == "pca" else "10e-5" }}'
-  dbt_pca:
-    materialization_options:
-      cast_types_to_udtf: true
+  test_precision: '{{
+    "10e-7" if target.name == "duckdb"
+    else "10e-5" if target.name == "clickhouse"
+    else "10e-7" if target.name == "snowflake"
+    else "10e-7" }}'
 
 models:
   +materialized: table
@@ -27,5 +28,4 @@ models:
 tests:
   +store_failures: true
 
-# During dev only!
 profile: "dbt_pca_profile"

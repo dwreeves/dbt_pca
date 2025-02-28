@@ -148,7 +148,7 @@ def cli():
               default=False,
               type=click.BOOL,
               show_default=True,
-              help="If true, use weights. NOTE: Weights not currently supported in ")
+              help="If true, use weights.")
 @click.option("--columns", "-c",
               default=None,
               type=click.INT,
@@ -421,7 +421,7 @@ def gen_hide_args_yaml(parse: bool) -> None:
             ]
         )
 
-    exclude_from_hiding = ["pca", "materialization_pca_default"]
+    exclude_from_hiding = ["pca"]
     with open("target/manifest.json") as f:
         manifest = json.load(f)
 

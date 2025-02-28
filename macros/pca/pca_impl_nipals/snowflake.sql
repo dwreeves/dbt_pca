@@ -1,98 +1,128 @@
-{% macro snowflake__pre_hook(
-    udf_database=none,
-    udf_schema=none
-) %}
-  {% set udf_ddls = [] %}
-  {% for row in model['compiled_code'].split("\n") %}
-    {% if row.lstrip().startswith("-- !DBT_PCA_CONFIG") %}
-      {% set comp_relations = [] %}
-      {% set parsed_row = row.strip().replace("-- !DBT_PCA_CONFIG:", "", 1) %}
-      {% set pca_num = (parsed_row[:3] | int) %}
-      {% set pca_config = fromjson(parsed_row[4:]) %}
-      {% if udf_database is not none %}
-        {% do pca_config.setdefault("materialization_options", {}) %}
-        {% do pca_config["materialization_options"].setdefault("udf_database", udf_database) %}
-      {% endif %}
-      {% if udf_schema is not none %}
-        {% do pca_config.setdefault("materialization_options", {}) %}
-        {% do pca_config["materialization_options"].setdefault("udf_schema", udf_schema) %}
-      {% endif %}
-      {% set udf_relation = adapter.get_relation(
-        database=pca_config["table"]["database"],
-        schema=pca_config["table"]["schema"],
-        identifier=pca_config["table"]["identifier"]
-      ) %}
-      {% do udf_ddls.append(dbt_pca.create_pca_udtf(
-          table=udf_relation,
-          index=pca_config.get('index'),
-          columns=pca_config.get('columns'),
-          values=pca_config.get('values'),
-          ncomp=pca_config.get('ncomp'),
-          normalize=pca_config.get('normalize'),
-          standardize=pca_config.get('standardize'),
-          demean=pca_config.get('demean'),
-          missing=pca_config.get('missing'),
-          weights=pca_config.get('weights'),
-          output=pca_config.get('output'),
-          output_options=pca_config.get('output_options'),
-          method=pca_config.get('method'),
-          method_options=pca_config.get('method_options'),
-          materialization_options=pca_config.get('materialization_options'),
-          pca_num=pca_num,
-      )) %}
-    {% endif %}
-  {% endfor %}
-  {{ return(udf_ddls | join ('\n')) }}
+{% macro snowflake___inject_config_into_relation(table,
+                                                 index=none,
+                                                 columns=none,
+                                                 rows=none,
+                                                 values=none,
+                                                 ncomp=none,
+                                                 normalize=true,
+                                                 standardize=true,
+                                                 demean=true,
+                                                 missing=none,
+                                                 weights=none,
+                                                 output='loadings',
+                                                 output_options=none,
+                                                 method='nipals',
+                                                 method_options=none,
+                                                 materialization_options=none)
+%}
+  {% set __load = load_result('__dbt_pca__pca_num') %}
+  {% if __load is none %}
+    {% set pca_num = 0 %}
+  {% else %}
+    {% set pca_num = __load.response + 1 %}
+  {% endif %}
+  {% do store_result('__dbt_pca__pca_num', pca_num) %}
+  {% set dbt_pca_config = {
+    "table": {
+      "database": table.database,
+      "schema": table.schema,
+      "identifier": table.identifier
+    },
+    "index": index,
+    "columns": columns,
+    "rows": rows,
+    "values": values,
+    "weights": weights,
+    "ncomp": ncomp,
+    "normalize": normalize,
+    "standardize": standardize,
+    "demean": demean,
+    "missing": missing,
+    "output": output,
+    "output_options": output_options,
+    "method": method,
+    "method_options": method_options,
+    "materialization_options": materialization_options
+  } %}
+  {% do config(
+    pre_hook=[{"sql": '{{ dbt_pca.snowflake__create_pca_udf(pca_num='~pca_num~') }}', "transaction": true}]
+  ) %}
+  {% if dbt_pca._get_materialization_option('drop_udf', materialization_options, true) %}
+    {% set arg_data = dbt_pca._get_udtf_function_signature_data(
+      table,
+      index,
+      columns,
+      values,
+      materialization_options
+    ) %}
+    {% set types_list = [] %}
+    {% for o in arg_data %}
+      {% do types_list.append(o['type']) %}
+    {% endfor %}
+    {% set drop_statement -%}
+      drop function if exists {{ dbt_pca._get_udtf_name(table, materialization_options, pca_num) }}({{ ', '.join(types_list) }});
+    {%- endset %}
+    {% do config(
+      post_hook=[{"sql": drop_statement, "transaction": true}]
+    ) %}
+  {% endif %}
+  {% if dbt_pca._get_materialization_option('cast_types_to_udtf', materialization_options, false) %}
+    {% set arg_data = dbt_pca._get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
+    {% set final_query %}(
+  -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
+  select p.*
+  from {{ table }} as t,
+  table(
+    {{ dbt_pca._get_udtf_name(table, materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values, cast_types=true, arg_data=arg_data) }})
+    over (partition by 1)
+  ) as p
+){% endset %}
+  {% else %}
+  {% set final_query %}(
+  -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
+  select p.*
+  from {{ table }} as t,
+  table(
+    {{ dbt_pca._get_udtf_name(table, materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values) }})
+    over (partition by 1)
+  ) as p
+){% endset %}
+{% endif %}
+{{ return(final_query) }}
 {% endmacro %}
 
-{% macro snowflake__post_hook(
-    udf_database=none,
-    udf_schema=none
-) %}
+{% macro snowflake__create_pca_udf(pca_num) %}
   {% if 'compiled_code' not in model %}
-    {{ return('select 1 /* DBT_PCA POST-HOOK ENABLED */;') }}
+    {{ return('select 1 /* dbt_pca.snowflake__create_pca_udf(pca_num='~pca_num~') */;') }}
   {% endif %}
-  {% set udf_ddls = [] %}
-  {% for row in model['compiled_code'].split("\n") %}
-    {% if row.lstrip().startswith("-- !DBT_PCA_CONFIG") %}
-      {% set comp_relations = [] %}
-      {% set parsed_row = row.strip().replace("-- !DBT_PCA_CONFIG:", "", 1) %}
-      {% set pca_num = (parsed_row[:3] | int) %}
-      {% set pca_config = fromjson(parsed_row[4:]) %}
-      {% if udf_database is not none %}
-        {% do pca_config.setdefault("materialization_options", {}) %}
-        {% do pca_config["materialization_options"].setdefault("udf_database", udf_database) %}
-      {% endif %}
-      {% if udf_schema is not none %}
-        {% do pca_config.setdefault("materialization_options", {}) %}
-        {% do pca_config["materialization_options"].setdefault("udf_schema", udf_schema) %}
-      {% endif %}
-      {% if dbt_pca._get_materialization_option('drop_udf', pca_config.get('materialization_options'), true) %}
-        {% set udf_relation = adapter.get_relation(
-          database=pca_config["table"]["database"],
-          schema=pca_config["table"]["schema"],
-          identifier=pca_config["table"]["identifier"]
-        ) %}
-        {% set arg_data = dbt_pca._get_udtf_function_signature_data(
-          udf_relation,
-          pca_config.get('index'),
-          pca_config.get('columns'),
-          pca_config.get('values'),
-          pca_config.get('materialization_options')
-        ) %}
-        {% set types_list = [] %}
-        {% for o in arg_data %}
-          {% do types_list.append(o['type']) %}
-        {% endfor %}
-        {% set drop_statement -%}
-          drop function if exists {{ dbt_pca._get_udtf_name(udf_relation, pca_config.get('materialization_options'), pca_num) }}({{ ', '.join(types_list) }});
-        {%- endset %}
-        {% do udf_ddls.append(drop_statement) %}
-      {% endif %}
-    {% endif %}
-  {% endfor %}
-  {{ return(udf_ddls | join ('\n')) }}
+  {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
+  {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
+  {% set input_relation = adapter.get_relation(
+    database=pca_config["table"]["database"],
+    schema=pca_config["table"]["schema"],
+    identifier=pca_config["table"]["identifier"]
+  ) %}
+  {% set _sql = dbt_pca.create_pca_udtf(
+    table=input_relation,
+    index=pca_config.get("index"),
+    columns=pca_config.get("columns"),
+    values=pca_config.get("values"),
+    ncomp=pca_config.get("ncomp"),
+    normalize=pca_config.get("normalize"),
+    standardize=pca_config.get("standardize"),
+    demean=pca_config.get("demean"),
+    missing=pca_config.get("missing"),
+    weights=pca_config.get("weights"),
+    output=pca_config.get("output"),
+    output_options=pca_config.get("output_options"),
+    method=pca_config.get("method"),
+    method_options=pca_config.get("method_options"),
+    materialization_options=pca_config.get("materialization_options"),
+    pca_num=pca_num
+  ) %}
+  {{ return(_sql) }}
 {% endmacro %}
+
 {% macro create_pca_udtf(table,
                          index,
                          columns,
@@ -116,6 +146,14 @@
   {%- set col = columns -%}
 {%- endif -%}
 {%- set compcol = dbt_pca._get_output_option("component_column_name", output_options, "comp") -%}
+{%- set projcol = dbt_pca._get_output_option("projection_column_name", output_options, "projection") -%}
+{%- set coefcol = dbt_pca._get_output_option("coefficient_column_name", output_options, "coefficient") -%}
+{%- set eveccol = dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") -%}
+{%- set evalcol = dbt_pca._get_output_option("eigenvalue_column_name", output_options, "eigenvalue") -%}
+{%- set factcol = dbt_pca._get_output_option("factor_column_name", output_options, "factor") -%}
+{%- set display_eigenvectors = dbt_pca._get_output_option("display_eigenvectors", output_options, true) -%}
+{%- set display_coefficients = dbt_pca._get_output_option("display_coefficients", output_options, true) -%}
+{%- set display_eigenvalues = dbt_pca._get_output_option("display_eigenvalues", output_options, true) -%}
 create or replace function {{ dbt_pca._get_udtf_name(table, materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_signature(table, index, columns, values, materialization_options) }})
 returns table ({{ dbt_pca._get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) }})
 language python
@@ -135,14 +173,14 @@ class Pca:
         df = df.pivot(columns=['{{ "', '".join(columns)  }}'], index=['{{ "', '".join(index) }}'], values='{{ values }}')
         {%- else %}
         df.columns.name = '{{ col[0] }}'
+        {%- if index %}
+        df.set_index(['{{ "', '".join(index) }}'], inplace=True)
         {%- endif %}
-{#      # if wide:
-        #   df = df.pivot(columns=[], index=[], values="")
-        # elif index:  # index is list
-        #   df = df.set_index(index)
-        #
-        # if missing == "zero":  # Then set missing = None
-        #   df = df.fillna(0)#}
+        {%- endif %}
+        {% if missing == 'zero' %}
+        df = df.fillna(0)
+        {% set missing = none %}
+        {% endif %}
         pca = PCA(
           df,
           ncomp={{ (ncomp | string).title() }},
@@ -160,47 +198,341 @@ class Pca:
 
         {# ########## Prep ########## #}
 
-        {% if output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'eigenvectors-wide-transposed'] %}
+        {% if display_eigenvectors and output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'eigenvectors-wide-transposed'] %}
         loadings = pca.loadings.copy()
         loadings.columns = pd.Index([int(re.search(r'\d+', i).group()) for i in loadings.columns], name="{{ compcol }}")
-        loadings = loadings.stack().reset_index().rename(columns={0: "eigenvector"})
+        loadings = loadings.stack().reset_index().rename(columns={0: "{{ eveccol }}"})
         {% endif %}
-        {% if output in ['loadings', 'loadings-long', 'loadings-wide', 'coefficients-wide', 'coefficients-wide-transposed'] %}
+        {% if display_coefficients and output in ['loadings', 'loadings-long', 'loadings-wide', 'coefficients-wide', 'coefficients-wide-transposed'] %}
         coeff = pca.coeff.copy()
         coeff.index = pd.Index([int(re.search(r'\d+', i).group()) for i in coeff.index], name="{{ compcol }}")
         while isinstance(coeff, pd.DataFrame):  # Required for multiindexes
             coeff = coeff.stack()
-        coeff = coeff.reset_index().rename(columns={0: "coefficient"})
+        coeff = coeff.reset_index().rename(columns={0: "{{ coefcol }}"})
         {% endif %}
 
         {# ########## Return ########## #}
 
         {% if output in ['loadings', 'loadings-long'] %}
-        eigenvals = pca.eigenvals.rename("eigenvalue")
-        loadings = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
-        res = loadings.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True).sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "eigenvector", "eigenvalue", "coefficient"]].reset_index(drop=True)
+        {% if display_eigenvalues %}
+        eigenvals = pca.eigenvals.rename("{{ evalcol }}")
+        {% endif %}
+        {% if display_eigenvectors and display_coefficients and display_eigenvalues %}
+        res = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True)
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ eveccol }}", "{{ evalcol }}", "{{ coefcol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif display_eigenvectors and display_coefficients and not display_eigenvalues %}
+        res = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ eveccol }}", "{{ coefcol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif display_eigenvectors and not display_coefficients and display_eigenvalues %}
+        res = loadings.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True)
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ eveccol }}", "{{ evalcol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif not display_eigenvectors and display_coefficients and display_eigenvalues %}
+        res = coeff.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True)
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ evalcol }}", "{{ coefcol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif display_eigenvectors and not display_coefficients and not display_eigenvalues %}
+        res = loadings
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ eveccol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif not display_eigenvectors and display_coefficients and not display_eigenvalues %}
+        res = coeff
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ coefcol }}"]]
+        res = res.reset_index(drop=True)
+        {% elif not display_eigenvectors and not display_coefficients and display_eigenvalues %}
+        res = loadings.merge(right=eigenvals, left_on="{{ compcol }}", right_index=True)
+        res = res.sort_values(["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res[["{{ compcol }}", *['{{ "', '".join(col)  }}'], "{{ eveccol }}"]]
+        res = res.reset_index(drop=True)
+        {% endif %}
         return res
-        {% elif output == 'loadings-wide' %}
-        loadings = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
-        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values=["eigenvector", "coefficient"])
-        loadings.columns = [f"{c[0]}_{c[1]}" for c in loadings.columns]
+        {% elif output in ['loadings-wide', 'eigenvectors-wide', 'coefficients-wide'] %}
+        {% if display_eigenvectors and display_coefficients %}
+        res = loadings.merge(right=coeff, left_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']], right_on=["{{ compcol }}", *['{{ "', '".join(col)  }}']])
+        res = res.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values=["eigenvector", "coefficient"])
+        res.columns = [f"{c[0]}_{c[1]}" for c in res.columns]
+        return res.reset_index()
+        {% elif display_eigenvectors %}
+        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values=["{{ eveccol }}"])
+        loadings.columns = [f"{{ eveccol }}_{c}" for c in loadings.columns]
         return loadings.reset_index()
-        {% elif output == 'eigenvectors-wide' %}
-        loadings = loadings.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values="eigenvector")
-        loadings.columns = [f"eigenvector_{c}" for c in loadings.columns]
-        return loadings.reset_index()
-        {% elif output == 'eigenvectors-wide-transposed' %}
-        {# This will be wide format, so it is guaranteed to not be multi-indexed. #}
-        loadings = loadings.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="eigenvector")
-        return loadings.reset_index()
-        {% elif output == 'coefficients-wide' %}
-        coeff = coeff.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values="coefficient")
-        coeff.columns = [f"coefficient_{c}" for c in loadings.columns]
+        {% elif display_coefficients %}
+        coeff = coeff.pivot(index=['{{ "', '".join(col)  }}'], columns=["{{ compcol }}"], values="{{ coefcol }}")
+        coeff.columns = [f"{{ coefcol }}_{c}" for c in coeff.columns]
         return coeff.reset_index()
+        {% endif %}
+        loadings.columns = [f"{c[0]}_{c[1]}" for c in res.columns]
         {% elif output == 'eigenvectors-wide-transposed' %}
         {# This will be wide format, so it is guaranteed to not be multi-indexed. #}
-        coeff = coeff.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="coefficient")
-        return loadings.reset_index()
+        loadings = loadings.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="{{ eveccol }}")
+        return loadings.reset_index()[["{{ compcol }}", *['{{ "', '".join(columns)  }}']]]
+        {% elif output == 'coefficients-wide-transposed' %}
+        {# This will be wide format, so it is guaranteed to not be multi-indexed. #}
+        coeff = coeff.pivot(columns=['{{ "', '".join(col)  }}'], index=["{{ compcol }}"], values="{{ coefcol }}")
+        return coeff.reset_index()[["{{ compcol }}", *['{{ "', '".join(columns)  }}']]]
+        {% elif output in ['factors', 'factors-long'] %}
+        factors = pca.factors
+        factors.columns = [int(re.search(r'\d+', i).group()) for i in factors.columns]
+        factors.columns.name = "{{ compcol }}"
+        return factors.stack().reset_index().rename(columns={0: "{{ factcol }}"})[["{{ compcol }}", *['{{ "', '".join(index)  }}'], "{{ factcol }}"]]
+        {% elif output in ['factors-wide'] %}
+        factors = pca.factors
+        factors.columns = [int(re.search(r'\d+', i).group()) for i in factors.columns]
+        factors.columns = [f"{{ compcol }}_{i}" for i in factors.columns]
+        {% if index %}
+        return factors.reset_index()
+        {% else %}
+        return factors
+        {% endif %}
+        {% elif output in ['projections', 'projections-long'] %}
+        projection = pca.projection
+        while isinstance(projection, pd.DataFrame):  # Required for multiindexes
+            projection = projection.stack()
+        projection = projection.reset_index().rename(columns={0: "{{ projcol }}"})
+        return projection[[*['{{ "', '".join(col)  }}'], *['{{ "', '".join(index)  }}'], "{{ projcol }}"]]
+        {% elif output in ['projections-wide', 'projections-untransformed-wide'] %}
+        {% if output == 'projections-wide' %}
+        projection = pca.projection.reset_index()
+        {% else %}
+        projection = pca.project(transform=False).reset_index()
+        {% endif %}
+        {% if index %}
+        return projection[[*['{{ "', '".join(index)  }}'], *['{{ "', '".join(columns)  }}']]]
+        {% else %}
+        return projection[['{{ "', '".join(columns)  }}']]
+        {% endif %}
         {% endif %}
 $$;
 {%- endmacro %}
+
+{% macro _get_udtf_function_args(index, columns, values, cast_types=false, arg_data=none) %}
+  {% if values is not none %}
+    {% set values = [values] %}
+  {% endif %}
+  {% if cast_types %}
+    {% set _type_maps = {} %}
+    {% for o in arg_data %}
+      {% do _type_maps.update({o['col']: o['type']}) %}
+    {% endfor %}
+    {% set _final = [] %}
+    {% for i in ((index or []) + columns + (values or [])) %}
+      {% do _final.append(i ~ '::' ~ _type_maps[i]) %}
+    {% endfor %}
+    {{ return(dbt_pca._list_with_alias(_final, 't') ) }}
+  {% endif %}
+  {{ return(dbt_pca._list_with_alias((index or []) + columns + (values or []), 't')) }}
+{% endmacro %}
+
+{% macro _get_udtf_function_signature(table, index, columns, values, materialization_options) %}
+  {% set arg_data = dbt_pca._get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
+  {% set li = [] %}
+  {% for o in arg_data %}
+    {% do li.append(adapter.quote(o['col']) ~ ' ' ~ o['type']) %}
+  {% endfor %}
+  {{ return(', '.join(li)) }}
+{% endmacro %}
+
+{% macro _get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
+  {# Snowflake does not allow generic typing for UDFs except via function overloading.
+     We can cast types to varchar and that works OK for loadings outputs.
+     However, it causes issues for other types of outputs because the type.
+     In these cases, we could do type overloading, or infer types from the ref. #}
+  {% set index_types = materialization_options.get('index_types') %}
+  {% set column_types = materialization_options.get('column_types') %}
+  {% set values_type = materialization_options.get('values_type') %}
+  {% set rel_columns_mapping = {} %}
+  {% if
+      table is not none
+      and table is not undefined
+      and
+      (
+        (index or [] | length) != (index_types or [] | length)
+        or (columns | length) != (column_types or [] | length)
+        or (values is not none) != (values_type is not none)
+      )
+  %}
+    {# In this case, not all types are explicitly defined, so we want to attempt
+       querying the database for the types. #}
+    {% set rel_columns = adapter.get_columns_in_relation(table) %}
+    {% for c in rel_columns %}
+      {% do rel_columns_mapping.update({c.column.lower(): c.dtype}) %}
+      {% do rel_columns_mapping.update({c.column: c.dtype}) %}
+    {% endfor %}
+  {% endif %}
+  {% set li = [] %}
+  {% for i in (index or []) %}
+    {% if index_types %}
+      {% set typ = index_types[loop.index-1] %}
+    {% elif i in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(i) %}
+    {% elif i.lower() in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(i.lower()) %}
+    {% else %}
+      {% set typ = 'varchar' %}
+    {% endif %}
+    {% do li.append({'col': i, 'type': typ}) %}
+  {% endfor %}
+  {% for i in columns %}
+    {% if column_types %}
+      {% set typ = column_types[loop.index-1] %}
+    {% elif i in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(i) %}
+    {% elif i.lower() in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(i.lower()) %}
+    {% elif values is none %}
+      {% set typ = 'float' %}
+    {% else %}
+      {% set typ = 'varchar' %}
+    {% endif %}
+    {% do li.append({'col': i, 'type': typ}) %}
+  {% endfor %}
+  {% if values is not none %}
+    {% if values_type %}
+      {% set typ = values_type %}
+    {% elif values in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(values) %}
+    {% elif values.lower() in rel_columns_mapping %}
+      {% set typ = rel_columns_mapping.get(values.lower()) %}
+    {% else %}
+      {% set typ = 'float' %}
+    {% endif %}
+    {% do li.append({'col': values, 'type': typ}) %}
+  {% endif %}
+  {{ return(li) }}
+{% endmacro %}
+
+{% macro _get_udtf_name(table, materialization_options, pca_num) %}
+  {% set udf_database = dbt_pca._get_materialization_option('udf_database', materialization_options, table.database) %}
+  {% set udf_schema = dbt_pca._get_materialization_option('udf_schema', materialization_options, table.schema) %}
+  {% if udtf_database and udtf_schema %}
+    {{ return(
+      adapter.quote_as_configured(udf_database, 'identifier')
+      ~ '.' ~
+      adapter.quote_as_configured(udf_schema, 'identifier')
+      ~ '.' ~
+      adapter.quote_as_configured(model.name~'__dbt_pca_udtf_'~(pca_num | string).zfill(3), 'identifier')
+    ) }}
+  {% elif udtf_schema %}
+    {{ return(
+      adapter.quote_as_configured(udf_schema, 'identifier')
+      ~ '.' ~
+      adapter.quote_as_configured(model.name~'__dbt_pca_udtf_'~(pca_num | string).zfill(3), 'identifier')
+    ) }}
+  {% else %}
+    {{ return(
+      adapter.quote_as_configured(model.name~'__dbt_pca_udtf_'~(pca_num | string).zfill(3), 'identifier')
+    ) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro _get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) %}
+  {# Snowflake does not allow generic typing for UDFs except via function overloading.
+     We can cast types to varchar and that works OK for loadings outputs.
+     However, it causes issues for other types of outputs because the type.
+     In these cases, we could do type overloading, or infer types from the ref. #}
+  {% set index_types = materialization_options.get('index_types') %}
+  {% set column_types = materialization_options.get('column_types') %}
+  {% set values_type = materialization_options.get('values_type') %}
+  {% set rel_columns_mapping = {} %}
+  {% set requires_columns_as_pk = output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'coefficients-wide', 'projections', 'projections-long'] %}
+  {% set requires_index = output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
+  {% if
+    true
+  %}
+    {# In this case, not all types are explicitly defined, so we want to attempt
+       querying the database for the types. #}
+    {% set rel_columns = adapter.get_columns_in_relation(table) %}
+    {% for c in rel_columns %}
+      {% do rel_columns_mapping.update({c.column.lower(): c.dtype}) %}
+      {% do rel_columns_mapping.update({c.column: c.dtype}) %}
+    {% endfor %}
+  {% endif %}
+  {% set comp_li = [] %}
+  {% set columns_li = [] %}
+  {% set index_li = [] %}
+  {% set other_li = [] %}
+  {% if output in ['loadings', 'loadings-long', 'eigenvectors-wide-transposed', 'coefficients-wide-transposed', 'factors', 'factors-long'] %}
+    {% do comp_li.append(dbt_pca._get_output_option("component_column_name", output_options, "comp") ~ ' integer') %}
+  {% endif %}
+  {% if requires_columns_as_pk and values is none %}
+    {% do columns_li.append(dbt_pca._get_output_option("column_column_name", output_options, "col") ~ ' varchar') %}
+  {% elif requires_columns_as_pk and values is not none %}
+    {% for i in columns %}
+      {% if column_types %}
+        {% set typ = column_types[loop.index-1] %}
+      {% elif i in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(i) %}
+      {% elif i.lower() in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(i.lower()) %}
+      {% else %}
+        {% set typ = 'varchar' %}
+      {% endif %}
+      {% do columns_li.append(i ~ ' ' ~ typ) %}
+    {% endfor %}
+  {% elif output in ['eigenvectors-wide-transposed', 'coefficients-wide-transposed', 'projections-wide', 'projections-untransformed-wide'] %}
+    {% for i in columns %}
+      {% do columns_li.append(i ~ ' float') %}
+    {% endfor %}
+  {% endif %}
+
+  {% if output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
+    {% for i in (index or []) %}
+      {% if index_types %}
+        {% set typ = index_types[loop.index-1] %}
+      {% elif i in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(i) %}
+      {% elif i.lower() in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(i.lower()) %}
+      {% else %}
+        {% set typ = 'varchar' %}
+      {% endif %}
+      {% do index_li.append(i ~ ' ' ~ typ) %}
+    {% endfor %}
+  {% endif %}
+
+  {% if output in ['loadings', 'loadings-long'] %}
+    {% if dbt_pca._get_output_option("display_eigenvalues", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") ~ ' float') %}
+    {% endif %}
+    {% if dbt_pca._get_output_option("display_eigenvectors", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("eigenvalue_column_name", output_options, "eigenvalue") ~ ' float') %}
+    {% endif %}
+    {% if dbt_pca._get_output_option("display_coefficients", output_options, true) %}
+      {% do other_li.append(dbt_pca._get_output_option("coefficient_column_name", output_options, "coefficient") ~ ' float') %}
+    {% endif %}
+  {% elif output in ['loadings-wide', 'eigenvectors-wide', 'coefficients-wide'] %}
+    {% if dbt_pca._get_output_option("display_eigenvectors", output_options, true) %}
+      {% for i in range(ncomp) %}
+        {% do other_li.append(dbt_pca._get_output_option("eigenvector_column_name", output_options, "eigenvector") ~'_'~i ~ ' float') %}
+      {% endfor %}
+    {% endif %}
+    {% if dbt_pca._get_output_option("display_coefficients", output_options, true) %}
+      {% for i in range(ncomp) %}
+        {% do other_li.append(dbt_pca._get_output_option("coefficient_column_name", output_options, "coefficient") ~'_'~i ~ ' float') %}
+      {% endfor %}
+    {% endif %}
+  {% elif output in ['factors', 'factors-long'] %}
+    {% do other_li.append(dbt_pca._get_output_option("factor_column_name", output_options, "factor") ~ ' float') %}
+  {% elif output in ['factors-wide'] %}
+    {% for i in range(ncomp) %}
+      {% do other_li.append(dbt_pca._get_output_option("factor_column_name", output_options, "factor") ~'_'~i ~ ' float') %}
+    {% endfor %}
+  {% elif output in ['projections', 'projections-long'] %}
+    {% do other_li.append(dbt_pca._get_output_option("projection_column_name", output_options, "projection") ~ ' float') %}
+  {% endif %}
+
+  {% if output in ['projections-wide', 'projections-untransformed-wide'] %}
+    {{ return(', '.join(index_li + columns_li)) }}
+  {% else %}
+    {{ return(', '.join(comp_li + columns_li + index_li + other_li)) }}
+  {% endif %}
+
+{% endmacro %}

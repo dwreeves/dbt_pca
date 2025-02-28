@@ -6,8 +6,7 @@
 > The following features are currently missing and are being prioritized for a **0.1.0** release:
 > - Missing value support (but probably not the EM algorithm algorithm for the time being).
 > - ~~Support for weights~~
-> - Snowflake support
-> - User facing conversion functions for eigenvectors --> factors + projections.
+> - ~~Snowflake support~~
 > - (Maybe) Fuller, paginated documentation on Github Pages.
 > - ~~Remove custom materialization~~
 
@@ -35,11 +34,25 @@ Reasons to use **dbt_pca**:
 - 📱 **Simple interface:** Just define a `table=` (which works with `ref()`, `source()`, and CTEs), your column(s) with `columns=`, an index with `index=`, and you're all set! Both "wide" and "long" data formats are supported.
 - 🤸‍ **Flexibility:** Tons of output options available to return things the way you want: choose from eigenvectors, factors, and projections in both wide and long formats.
 - 🤗 **User friendly:** The API provides comprehensive feedback on input errors.
-- 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCAz performed in Statsmodels with high precision assertions (between 10e-6 to 10e-7, depending on the database engine).
+- 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCAz performed in Statsmodels with high precision assertions (between 10e-5 to 10e-7, depending on the database engine).
 
-**Currently only DuckDB and Clickhouse are supported.**
+**Currently only DuckDB, Clickhouse, and Snowflake are supported.**
 
 _Note: If you enjoy this project, you may also enjoy my other dbt machine learning project, [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg)._ 😊
+
+# Supported Databases
+
+**dbt_pca** works with the following databases:
+
+| Database       | Supported | Precision asserted in CI\* | Supported since version |
+|----------------|-----------|----------------------------|-------------------------|
+| **DuckDB**     | ✅         | 10e-7                      | 0.1.0                   |
+| **Clickhouse** | ✅         | 10e-5                      | 0.1.0                   |
+| **Snowflake**  | ✅         | 10e-7                      | 0.1.0                   |
+
+Please see the **Performance optimization** section on how to get the best performance out of each database.
+
+> _\* Precision is comparison to `PCA(method='nipals')` in Statsmodels. In some cases, precision depends on the implementation method; precision is based on suggested implementation._
 
 # Installation
 
@@ -258,24 +271,6 @@ order by abs(residual) desc
 Of course, there are many other things you can do with **dbt_pca** than just the above.
 Hopefully this example inspires you to explore all the possibilities!
 
-# Supported Databases
-
-**dbt_pca** works with the following databases:
-
-| Database       | Supported | Precision asserted in CI\* | Supported since version |
-|----------------|-----------|----------------------------|-------------------------|
-| **DuckDB**     | ✅         | 10e-7                      | 0.1.0                   |
-| **Clickhouse** | ✅         | 10e-6                      | 0.1.0                   |
-| **Snowflake**  | ✅         | WIP                        | 0.1.0                   |
-
-Please see the **Performance optimization** section on how to get the best performance out of each database.
-
-**dbt_pca** does not currently work with Snowflake, unfortunately due to limitations to Snowflake that are hard to overcome.
-My goal is to have this working in Snowflake as well, but this has proven difficult to do.
-Please check back soon.
-
-> _\* Precision is comparison to `PCA(method='nipals')` in Statsmodels. In some cases, precision depends on the implementation method; precision is based on suggested implementation._
-
 # API
 
 ### `{{ dbt_pca.pca() }}`
@@ -330,7 +325,7 @@ Where:
   - `'projections-wide'`
   - `'projections-untransformed-wide'`
 - **output_options**:  See **Outputs and output options** section of the README for more.
-- **method**: The method used to calculate the regression. Currently only `'nipals'` is supported for non-Snowflake databases. See **Methods and method options** for more.
+- **method**: The method used to calculate the regression. Currently only `'nipals'` is supported in non-Snowflake databases; `'eig'` and `'svd'` are additionally supported in Snowflake. See **Methods and method options** for more.
 - **method_options**: Options specific to the estimation method. See **Methods and method options** for more.
 
 Names for function arguments and concepts vary across PCA implementations in different languages and frameworks.
@@ -613,7 +608,10 @@ select * from {{
 
 ### Snowflake performance optimization
 
-WIP
+The Snowflake implementation cheats by wrapping `sm.PCA()` (there is no other way to do it, really).
+Because it runs as a Python UDF, for heavy workloads, "Snowpark-optimized" warehouses are recommended.
+These warehouses allow for additional memory to be allocated for a given warehouse size, relative to the amount of compute power of the warehouse instance.
+Read more about Snowpark-optimized warehouses in the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/warehouses-snowpark-optimized).
 
 # Notes
 

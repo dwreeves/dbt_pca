@@ -215,14 +215,27 @@
     {% endif %}
   {% endif %}
 
-  {% if output == 'eigenvectors-wide' %}
+  {% if output == 'loadings-wide' %}
+    {% do output_options.setdefault('display_eigenvalues', dbt_pca._get_output_option("display_eigenvalues", {}, false)) %}
+  {% elif output == 'eigenvectors-wide' %}
     {% set output = 'loadings-wide' %}
-    {% do output_options.setdefault('display_eigenvalues', false) %}
-    {% do output_options.setdefault('display_coefficients', false) %}
+    {% do output_options.setdefault('display_eigenvalues', dbt_pca._get_output_option("display_eigenvalues", {}, false)) %}
+    {% do output_options.setdefault('display_coefficients', dbt_pca._get_output_option("display_coefficients", {}, false)) %}
   {% elif output == 'coefficients-wide' %}
     {% set output = 'loadings-wide' %}
-    {% do output_options.setdefault('display_eigenvalues', false) %}
-    {% do output_options.setdefault('display_eigenvectors', false) %}
+    {% do output_options.setdefault('display_eigenvalues', dbt_pca._get_output_option("display_eigenvalues", {}, false)) %}
+    {% do output_options.setdefault('display_eigenvectors', dbt_pca._get_output_option("display_eigenvectors", {}, false)) %}
+  {% endif %}
+
+  {%
+    if output in ['eigenvectors-wide', 'coefficients-wide', 'loadings-wide', 'loadings', 'loadings-long']
+    and not dbt_pca._get_output_option("display_eigenvectors", output_options, true)
+    and not dbt_pca._get_output_option("display_eigenvalues", output_options, true)
+    and not dbt_pca._get_output_option("display_coefficients", output_options, true)
+  %}
+    {{ exceptions.raise_compiler_error(
+      "Nothing to display. Please set either display_eigenvectors, display_eigenvalues, or display_coefficients to true."
+    ) }}
   {% endif %}
 
   {% if inject_config and (table.identifier is undefined or table.is_cte) %}

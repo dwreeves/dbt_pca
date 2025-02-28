@@ -1,5 +1,0 @@
-sources:
-  - name: foosource
-    schema: default
-    tables:
-      - name: footable
