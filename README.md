@@ -579,6 +579,14 @@ The below options you probably will not need, but are available just in case the
 - `index_types` (`list[str] | None`; default: `None`) - If set, take input types for the index from this instead of automatically inferring them.
 - `values_type` (`str | None`; default: `None`) - If set, take input types for the values from this instead of automatically inferring them.
 
+## Clickhouse
+
+- `calculate_in_steps` (`bool`; default: `True`) - If set, calculate the PCA in multiple steps: i.e. create temporary tables for each step involved. By default, this is `True` for Clickhouse for performance reasons; I will set this to `False` by default when Clickhouse releases [materialized CTEs](https://github.com/ClickHouse/ClickHouse/issues/53449) (for such supported versions of Clickhouse).
+
+## Duckdb
+
+- `calculate_in_steps` (`bool`; default: `False`) - If set, calculate the PCA in multiple steps: i.e. create temporary tables for each step involved. By default, this is `False` for Duckdb as it is unnecessary for performance.
+
 # Performance
 
 **Please [open an issue on Github](https://github.com/dwreeves/dbt_pca/issues) if you experience any performance problems.**

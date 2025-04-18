@@ -26,8 +26,6 @@ function docker-run-clickhouse {
       -p 8123:8123 \
       --name dbt-pca-clickhouse \
       --ulimit nofile=262144:262144 \
-      -v ./clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml \
-      -v ./clickhouse/config.xml:/etc/clickhouse-server/config.d/config.xml \
       clickhouse/clickhouse-server \
       || docker start dbt-pca-clickhouse
 }
