@@ -48,25 +48,11 @@
     pre_hook=[{"sql": '{{ dbt_pca.snowflake__create_pca_udf(pca_num='~pca_num~') }}', "transaction": true}]
   ) %}
   {% if dbt_pca._get_materialization_option('drop_udf', materialization_options, true) %}
-    {% set arg_data = dbt_pca._get_udtf_function_signature_data(
-      table,
-      index,
-      columns,
-      values,
-      materialization_options
-    ) %}
-    {% set types_list = [] %}
-    {% for o in arg_data %}
-      {% do types_list.append(o['type']) %}
-    {% endfor %}
-    {% set drop_statement -%}
-      drop function if exists {{ dbt_pca._get_udtf_name(table, materialization_options, pca_num) }}({{ ', '.join(types_list) }});
-    {%- endset %}
     {% do config(
-      post_hook=[{"sql": drop_statement, "transaction": true}]
+      post_hook=[{"sql": '{{ dbt_pca.snowflake__drop_pca_udf(pca_num='~pca_num~') }}', "transaction": true}]
     ) %}
   {% endif %}
-  {% if dbt_pca._get_materialization_option('cast_types_to_udtf', materialization_options, false) %}
+  {% if dbt_pca._get_materialization_option('cast_types_to_udf', materialization_options, not dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)) %}
     {% set arg_data = dbt_pca._get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
     {% set final_query %}(
   -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
@@ -102,7 +88,7 @@
     schema=pca_config["table"]["schema"],
     identifier=pca_config["table"]["identifier"]
   ) %}
-  {% set _sql = dbt_pca.create_pca_udtf(
+  {% set _sql = dbt_pca._create_pca_udtf(
     table=input_relation,
     index=pca_config.get("index"),
     columns=pca_config.get("columns"),
@@ -123,7 +109,7 @@
   {{ return(_sql) }}
 {% endmacro %}
 
-{% macro create_pca_udtf(table,
+{% macro _create_pca_udtf(table,
                          index,
                          columns,
                          values,
@@ -313,6 +299,43 @@ class Pca:
 $$;
 {%- endmacro %}
 
+
+{% macro snowflake__drop_pca_udf(pca_num) %}
+  {% if 'compiled_code' not in model %}
+    {{ return('select 1 /* dbt_pca.snowflake__drop_pca_udf(pca_num='~pca_num~') */;') }}
+  {% endif %}
+  {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
+  {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
+  {% set input_relation = adapter.get_relation(
+    database=pca_config["table"]["database"],
+    schema=pca_config["table"]["schema"],
+    identifier=pca_config["table"]["identifier"]
+  ) %}
+
+  {% set arg_data = dbt_pca._get_udtf_function_signature_data(
+    table=input_relation,
+    index=pca_config.get("index"),
+    columns=pca_config.get("columns"),
+    values=pca_config.get("values"),
+    materialization_options=pca_config.get("materialization_options")
+  ) %}
+
+  {% set types_list = [] %}
+  {% for o in arg_data %}
+    {% do types_list.append(o['type']) %}
+  {% endfor %}
+
+  {% set drop_statement -%}
+    drop function if exists {{ dbt_pca._get_udtf_name(
+      table=input_relation,
+      materialization_options=pca_config.get("materialization_options"),
+      pca_num=pca_num) }}({{ ', '.join(types_list) }});
+  {%- endset %}
+
+  {{ return(drop_statement) }}
+{% endmacro %}
+
+
 {% macro _get_udtf_function_args(index, columns, values, cast_types=false, arg_data=none) %}
   {% if values is not none %}
     {% set values = [values] %}
@@ -358,13 +381,19 @@ $$;
         or (columns | length) != (column_types or [] | length)
         or (values is not none) != (values_type is not none)
       )
+      and dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)
   %}
     {# In this case, not all types are explicitly defined, so we want to attempt
        querying the database for the types. #}
     {% set rel_columns = adapter.get_columns_in_relation(table) %}
     {% for c in rel_columns %}
-      {% do rel_columns_mapping.update({c.column.lower(): c.dtype}) %}
-      {% do rel_columns_mapping.update({c.column: c.dtype}) %}
+      {% if c.numeric_precision and c.numeric_scale %}
+        {% set d = c.dtype ~ '(' ~ c.numeric_precision ~ ', ' ~ c.numeric_scale ~ ')' %}
+      {% else %}
+        {% set d = c.dtype %}
+      {% endif %}
+      {% do rel_columns_mapping.update({c.column.lower(): d}) %}
+      {% do rel_columns_mapping.update({c.column: d}) %}
     {% endfor %}
   {% endif %}
   {% set li = [] %}
@@ -412,7 +441,7 @@ $$;
 {% macro _get_udtf_name(table, materialization_options, pca_num) %}
   {% set udf_database = dbt_pca._get_materialization_option('udf_database', materialization_options, table.database) %}
   {% set udf_schema = dbt_pca._get_materialization_option('udf_schema', materialization_options, table.schema) %}
-  {% if udtf_database and udtf_schema %}
+  {% if udf_database and udf_schema %}
     {{ return(
       adapter.quote_as_configured(udf_database, 'identifier')
       ~ '.' ~
@@ -420,7 +449,7 @@ $$;
       ~ '.' ~
       adapter.quote_as_configured(model.name~'__dbt_pca_udtf_'~(pca_num | string).zfill(3), 'identifier')
     ) }}
-  {% elif udtf_schema %}
+  {% elif udf_schema %}
     {{ return(
       adapter.quote_as_configured(udf_schema, 'identifier')
       ~ '.' ~
@@ -444,15 +473,19 @@ $$;
   {% set rel_columns_mapping = {} %}
   {% set requires_columns_as_pk = output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'coefficients-wide', 'projections', 'projections-long'] %}
   {% set requires_index = output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
-  {% if
-    true
+  {% if dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)
   %}
     {# In this case, not all types are explicitly defined, so we want to attempt
        querying the database for the types. #}
     {% set rel_columns = adapter.get_columns_in_relation(table) %}
     {% for c in rel_columns %}
-      {% do rel_columns_mapping.update({c.column.lower(): c.dtype}) %}
-      {% do rel_columns_mapping.update({c.column: c.dtype}) %}
+      {% if c.numeric_precision and c.numeric_scale %}
+        {% set d = c.dtype ~ '(' ~ c.numeric_precision ~ ', ' ~ c.numeric_scale ~ ')' %}
+      {% else %}
+        {% set d = c.dtype %}
+      {% endif %}
+      {% do rel_columns_mapping.update({c.column.lower(): d}) %}
+      {% do rel_columns_mapping.update({c.column: d}) %}
     {% endfor %}
   {% endif %}
   {% set comp_li = [] %}

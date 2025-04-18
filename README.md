@@ -62,7 +62,7 @@ Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
   - package: "dwreeves/dbt_pca"
-    version: "0.0.2"
+    version: "0.0.3"
 ```
 
 The full file will look something like this:
@@ -73,7 +73,7 @@ packages:
   # Other packages here
   # ...
   - package: "dwreeves/dbt_pca"
-    version: "0.0.2"
+    version: "0.0.3"
 ```
 
 # Examples
@@ -292,7 +292,8 @@ def pca(
     output: str = 'loadings',
     output_options: dict[str, Any] | None = None,
     method: Literal['nipals'] = 'nipals',
-    method_options: dict[str, Any] | None = None
+    method_options: dict[str, Any] | None = None,
+    materialization_options: dict[str, Any] | None = None
 ):
     ...
 ```
@@ -327,6 +328,7 @@ Where:
 - **output_options**:  See **Outputs and output options** section of the README for more.
 - **method**: The method used to calculate the regression. Currently only `'nipals'` is supported in non-Snowflake databases; `'eig'` and `'svd'` are additionally supported in Snowflake. See **Methods and method options** for more.
 - **method_options**: Options specific to the estimation method. See **Methods and method options** for more.
+- **materialization_options**: Database-specific options relating to how the table is materialized. See **Materialization options** for more.
 
 Names for function arguments and concepts vary across PCA implementations in different languages and frameworks.
 **In this library, all names and concepts are equivalent to those in Statsmodels.**
@@ -536,6 +538,46 @@ vars:
       nipals:
         max_iter: 300
 ```
+
+# Materialization options
+
+Materialization options influences the behind-the-scenes stuff relating to how the dbt model runs.
+
+Materialization options can be set globally via `vars`, e.g. in your `dbt_project.yml`:
+
+```yaml
+# dbt_project.yml
+vars:
+  dbt_pca:
+    materialization_options:
+      udf_database: my_udf_db
+      udf_schema: my_udf_schema
+      drop_udf: false
+```
+
+## Snowflake
+
+A lot of magic happens under the hood to make the Snowflake implementation possible.
+The defaults should work fine, but a lot of things are exposed to the user via the `materialization_options` to give the user control over things.
+
+Basically, the Snowflake implementation cheats by wrapping `sm.PCA()`.
+This is implemented as a user-defined table function under the hood, which is created as pre-hook which is injected into the model config as a side-effect of calling `dbt_pca.pca()`.
+The pre-hook is called lazily by using the JSON config injected into the compiled model.
+**dbt_pca** then reads the schema of the referenced node in the `table=` arg to infer the types for the function inputs and outputs.
+
+With all of that out of the way, here are the materialization options available for the Snowflake implementation:
+
+- `udf_database`: (`string`; default: use the model's database) - The database where the UDF is written to.
+- `udf_schema`: (`string`; default: use the model's schema) - The schema where the UDF is written to.
+- `infer_function_signature_types` (`bool`; default: `True`) - If True, infer types of the UDF function signature based on the types of the upstream node. If False, use `float`
+- `cast_types_to_udf` (`bool`; default: `False` if `infer_function_signature_types` is `True`, otherwise `True`) - If True, all columns are cast before being placed into the UDF (e.g. `function(foo::number)` instead of `function(foo)`).
+- `drop_udf` (`bool`; default: `True`) - If True, drop the UDF after running the model (as a post-hook). If False, do not drop the UDF.
+
+The below options you probably will not need, but are available just in case the above options are insufficient:
+
+- `column_types` (`list[str] | None`; default: `None`) - If set, take input types for the columns from this instead of automatically inferring them.
+- `index_types` (`list[str] | None`; default: `None`) - If set, take input types for the index from this instead of automatically inferring them.
+- `values_type` (`str | None`; default: `None`) - If set, take input types for the values from this instead of automatically inferring them.
 
 # Performance
 
