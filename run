@@ -20,13 +20,20 @@ function setup {
   uvx pre-commit install
 }
 
+# #      -v "${PWD}/db_config/clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml" \
+
 function docker-run-clickhouse {
     docker run \
       -d \
       -p 8123:8123 \
+      -p 8443:8443 \
+      -e "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1" \
+      -e "CLICKHOUSE_PASSWORD=dbt_user_password" \
+      -e "CLICKHOUSE_USER=dbt_user" \
+      -e "CLICKHOUSE_DB=default" \
       --name dbt-pca-clickhouse \
       --ulimit nofile=262144:262144 \
-      clickhouse/clickhouse-server \
+      clickhouse/clickhouse-server:24.10 \
       || docker start dbt-pca-clickhouse
 }
 
@@ -54,7 +61,7 @@ function test {
     createdb "${POSTGRES_DB-"dbt_pca"}" || true
   fi
 
-  if [ "${target}" = "clickhouse" ];
+  if [ -z "${GITHUB_ACTIONS}" ] && [ "${target}" = "clickhouse" ];
   then
     docker-run-clickhouse || true
   fi
