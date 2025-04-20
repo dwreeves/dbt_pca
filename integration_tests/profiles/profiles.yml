@@ -7,7 +7,8 @@ dbt_pca_profile:
     clickhouse:
       type: clickhouse
       port: 8123
-      user: default
+      user: dbt_user
+      password: dbt_user_password
       schema: default
     snowflake:
       type: snowflake
