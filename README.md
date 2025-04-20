@@ -34,7 +34,7 @@ Reasons to use **dbt_pca**:
 - 📱 **Simple interface:** Just define a `table=` (which works with `ref()`, `source()`, and CTEs), your column(s) with `columns=`, an index with `index=`, and you're all set! Both "wide" and "long" data formats are supported.
 - 🤸‍ **Flexibility:** Tons of output options available to return things the way you want: choose from eigenvectors, factors, and projections in both wide and long formats.
 - 🤗 **User friendly:** The API provides comprehensive feedback on input errors.
-- 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCAz performed in Statsmodels with high precision assertions (between 10e-5 to 10e-7, depending on the database engine).
+- 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCA's performed in Statsmodels with high precision assertions (between 10e-5 to 10e-7, depending on the database engine).
 - 🪄 **Deep under-the-hood magic:** In the pursuit of making this as easy as possible to implement across databases, tons of dbt dark magic wizardry happens under the hood. I spent weeks of my life so you could save seconds of yours!
 
 **Currently only DuckDB, Clickhouse, and Snowflake are supported.**
