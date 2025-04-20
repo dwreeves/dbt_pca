@@ -1,5 +1,9 @@
 # Changelog
 
+### `0.0.4`
+
+- Work in progress, but with Snowflake now supporting CTEs + ephemeral nodes in `table=...`, plus also explicit type-casts directly in column definitions.
+
 ### `0.0.3`
 
 - Work in progress, but with some small bugs in the Snowflake implementation fixed.

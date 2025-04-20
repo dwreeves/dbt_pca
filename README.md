@@ -35,6 +35,7 @@ Reasons to use **dbt_pca**:
 - 🤸‍ **Flexibility:** Tons of output options available to return things the way you want: choose from eigenvectors, factors, and projections in both wide and long formats.
 - 🤗 **User friendly:** The API provides comprehensive feedback on input errors.
 - 💪 **Durable and tested:** Everything in this code base is tested against equivalent PCAz performed in Statsmodels with high precision assertions (between 10e-5 to 10e-7, depending on the database engine).
+- 🪄 **Deep under-the-hood magic:** In the pursuit of making this as easy as possible to implement across databases, tons of dbt dark magic wizardry happens under the hood. I spent weeks of my life so you could save seconds of yours!
 
 **Currently only DuckDB, Clickhouse, and Snowflake are supported.**
 
@@ -62,7 +63,7 @@ Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
   - package: "dwreeves/dbt_pca"
-    version: "0.0.3"
+    version: "0.0.4"
 ```
 
 The full file will look something like this:
@@ -73,7 +74,7 @@ packages:
   # Other packages here
   # ...
   - package: "dwreeves/dbt_pca"
-    version: "0.0.3"
+    version: "0.0.4"
 ```
 
 # Examples
@@ -573,7 +574,7 @@ With all of that out of the way, here are the materialization options available 
 - `cast_types_to_udf` (`bool`; default: `False` if `infer_function_signature_types` is `True`, otherwise `True`) - If True, all columns are cast before being placed into the UDF (e.g. `function(foo::number)` instead of `function(foo)`).
 - `drop_udf` (`bool`; default: `True`) - If True, drop the UDF after running the model (as a post-hook). If False, do not drop the UDF.
 
-The below options you probably will not need, but are available just in case the above options are insufficient:
+The below options you probably will not need (it is suggested you instead cast the type in the definition, e.g. `index=['id::integer']`), but are available just in case the above options are insufficient:
 
 - `column_types` (`list[str] | None`; default: `None`) - If set, take input types for the columns from this instead of automatically inferring them.
 - `index_types` (`list[str] | None`; default: `None`) - If set, take input types for the index from this instead of automatically inferring them.
@@ -587,18 +588,18 @@ The below options you probably will not need, but are available just in case the
 
 - `calculate_in_steps` (`bool`; default: `False`) - If set, calculate the PCA in multiple steps: i.e. create temporary tables for each step involved. By default, this is `False` for Duckdb as it is unnecessary for performance.
 
-# Performance
+# Performance and Misc. Notes
 
 **Please [open an issue on Github](https://github.com/dwreeves/dbt_pca/issues) if you experience any performance problems.**
 I am still ironing things out a bit.
 
-### DuckDB performance
+### DuckDB
 
 The performance for DuckDB is very fast, and users should generally not have any issues with DuckDB.
 In testing, values are asserted to equal the Statsmodels implementation of PCA with a very high level of precision,
 and the test cases run very quickly.
 
-### Clickhouse performance optimization
+### Clickhouse
 
 Clickhouse is made performant by calculating individual steps in temporary tables.
 This is because Clickhouse does not support materialized CTEs (although this feature is scheduled to come out in 2025),
@@ -656,12 +657,80 @@ select * from {{
 }}
 ```
 
-### Snowflake performance optimization
+### Snowflake
 
 The Snowflake implementation cheats by wrapping `sm.PCA()` (there is no other way to do it, really).
 Because it runs as a Python UDF, for heavy workloads, "Snowpark-optimized" warehouses are recommended.
 These warehouses allow for additional memory to be allocated for a given warehouse size, relative to the amount of compute power of the warehouse instance.
 Read more about Snowpark-optimized warehouses in the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/warehouses-snowpark-optimized).
+
+For the Snowflake implementation, column types can be cast explicitly and this casting will be used for the UDF definition.
+This can be useful when referencing a CTE, from which column types cannot be inferred. (Column types are inferred for `ref()`'s and `source()`'s only.)
+For example:
+
+```sql
+{{
+  config(
+    materialized='table',
+  )
+}}
+
+with my_cte as (
+  select id, column_a, column_b, column_c, column_d, column_e
+  from {{ ref('upstream_table') }}
+)
+
+select * from {{
+  dbt_pca.pca(
+    table='my_cte',
+    index='id::integer',
+    columns=[
+      'column_a::number(38, 8)',
+      'column_b::number(38, 8)',
+      'column_c::number(38, 8)',
+      'column_d::number(38, 8)',
+      'column_e::number(38, 8)',
+    ],
+    ncomp=2
+  )
+}}
+```
+
+If you reference a CTE and do not cast types yourself, then types will be cast to the most permissive types, i.e. `float`s for all columns used in the matrix, and `varchar`s for all other columns.
+For example, in the above example, without explicit typecasting, the `index='id'` will be cast to a varchar:
+
+```sql
+{{
+  config(
+    materialized='table',
+  )
+}}
+
+with my_cte as (
+  select id, column_a, column_b, column_c, column_d, column_e
+  from {{ ref('upstream_table') }}
+)
+
+-- Because table=... is a CTE and there are no explicit typecasts,
+-- id will be cast to a varchar, and column_*'s will be cast to floats
+
+select * from {{
+  dbt_pca.pca(
+    table='my_cte',
+    index='id',
+    columns=[
+      'column_a',
+      'column_b',
+      'column_c',
+      'column_d',
+      'column_e',
+    ],
+    ncomp=2
+  )
+}}
+```
+
+Please note explicit type-casting of `columns` / `index` / `values` only works in Snowflake.
 
 # Notes
 

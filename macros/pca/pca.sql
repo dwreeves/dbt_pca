@@ -238,16 +238,9 @@
     ) }}
   {% endif %}
 
-  {% if inject_config and (table.identifier is undefined or table.is_cte) %}
-    {% if adapter.type() == 'snowflake' %}
-      {% set _error_cond = "When using the Snowflake adapter" %}
-    {% elif adapter.type() == 'clickhouse' %}
-      {% set _error_cond = "When using the Clickhouse adapter with 'calculate_in_steps' enabled" %}
-    {% else %}
-      {% set _error_cond = "When 'calculate_in_steps' is turned on" %}
-    {% endif %}
+  {% if calculate_in_steps and (table.identifier is undefined or table.is_cte) %}
     {{ exceptions.raise_compiler_error(
-      _error_cond ~ ", the `table=` input must be either a `ref()` or `source()`"
+      "When 'calculate_in_steps' is turned on, the `table=` input must be either a `ref()` or `source()`"
       " to a non-ephemeral node."
     ) }}
   {% endif %}

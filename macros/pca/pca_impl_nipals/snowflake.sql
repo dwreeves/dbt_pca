@@ -24,9 +24,10 @@
   {% do store_result('__dbt_pca__pca_num', pca_num) %}
   {% set dbt_pca_config = {
     "table": {
-      "database": table.database,
-      "schema": table.schema,
-      "identifier": table.identifier
+      "cte": (table.identifier is undefined or table.is_cte),
+      "database": table.database if table.database is not undefined else none,
+      "schema": table.database if table.schema is not undefined else none,
+      "identifier": table.identifier if table.identifier is not undefined else table
     },
     "index": index,
     "columns": columns,
@@ -52,14 +53,14 @@
       post_hook=[{"sql": '{{ dbt_pca.snowflake__drop_pca_udf(pca_num='~pca_num~') }}', "transaction": true}]
     ) %}
   {% endif %}
-  {% if dbt_pca._get_materialization_option('cast_types_to_udf', materialization_options, not dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)) %}
+  {% if table.identifier is undefined or dbt_pca._get_materialization_option('cast_types_to_udf', materialization_options, not dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)) %}
     {% set arg_data = dbt_pca._get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
     {% set final_query %}(
   -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
   select p.*
   from {{ table }} as t,
   table(
-    {{ dbt_pca._get_udtf_name(table, materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values, cast_types=true, arg_data=arg_data) }})
+    {{ dbt_pca._get_udtf_name(materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values, cast_types=true, arg_data=arg_data) }})
     over (partition by 1)
   ) as p
 ){% endset %}
@@ -69,7 +70,7 @@
   select p.*
   from {{ table }} as t,
   table(
-    {{ dbt_pca._get_udtf_name(table, materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values) }})
+    {{ dbt_pca._get_udtf_name(materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values) }})
     over (partition by 1)
   ) as p
 ){% endset %}
@@ -83,11 +84,15 @@
   {% endif %}
   {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
   {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
-  {% set input_relation = adapter.get_relation(
-    database=pca_config["table"]["database"],
-    schema=pca_config["table"]["schema"],
-    identifier=pca_config["table"]["identifier"]
-  ) %}
+  {% if pca_config["table"]["cte"] %}
+    {% set input_relation = pca_config["table"]["identifier"] %}
+  {% else %}
+    {% set input_relation = adapter.get_relation(
+      database=pca_config["table"]["database"],
+      schema=pca_config["table"]["schema"],
+      identifier=pca_config["table"]["identifier"]
+    ) %}
+  {% endif %}
   {% set _sql = dbt_pca._create_pca_udtf(
     table=input_relation,
     index=pca_config.get("index"),
@@ -126,10 +131,23 @@
                          materialization_options,
                          pca_num)
   -%}
+{%- set _columns = columns -%}
+{%- set columns = [] -%}
+{%- for c in _columns -%}
+  {%- do columns.append(c.split("::")[0]) -%}
+{%- endfor -%}
+{%- set _index = index -%}
+{%- set index = [] -%}
+{%- for c in _index -%}
+  {%- do index.append(c.split("::")[0]) -%}
+{%- endfor -%}
 {%- if values is none -%}
   {% set col = [dbt_pca._get_output_option("columns_column_name", output_options, "col")] -%}
+  {% set _values = none %}
 {%- else -%}
   {%- set col = columns -%}
+  {%- set _values = values -%}
+  {%- set values = values.split("::")[0] -%}
 {%- endif -%}
 {%- set compcol = dbt_pca._get_output_option("component_column_name", output_options, "comp") -%}
 {%- set projcol = dbt_pca._get_output_option("projection_column_name", output_options, "projection") -%}
@@ -140,7 +158,7 @@
 {%- set display_eigenvectors = dbt_pca._get_output_option("display_eigenvectors", output_options, true) -%}
 {%- set display_coefficients = dbt_pca._get_output_option("display_coefficients", output_options, true) -%}
 {%- set display_eigenvalues = dbt_pca._get_output_option("display_eigenvalues", output_options, true) -%}
-create or replace function {{ dbt_pca._get_udtf_name(table, materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_signature(table, index, columns, values, materialization_options) }})
+create or replace function {{ dbt_pca._get_udtf_name(materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_signature(table, _index, _columns, _values, materialization_options) }})
 returns table ({{ dbt_pca._get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) }})
 language python
 runtime_version = 3.9
@@ -306,11 +324,15 @@ $$;
   {% endif %}
   {% set pca_config = dbt_pca.retrieve_injected_config(pca_num) %}
   {% set final_suffix = '__dbt_pca_'~(pca_num | string).zfill(3)~'_final' %}
-  {% set input_relation = adapter.get_relation(
-    database=pca_config["table"]["database"],
-    schema=pca_config["table"]["schema"],
-    identifier=pca_config["table"]["identifier"]
-  ) %}
+  {% if pca_config["table"]["cte"] %}
+    {% set input_relation = pca_config["table"]["identifier"] %}
+  {% else %}
+    {% set input_relation = adapter.get_relation(
+      database=pca_config["table"]["database"],
+      schema=pca_config["table"]["schema"],
+      identifier=pca_config["table"]["identifier"]
+    ) %}
+  {% endif %}
 
   {% set arg_data = dbt_pca._get_udtf_function_signature_data(
     table=input_relation,
@@ -327,7 +349,6 @@ $$;
 
   {% set drop_statement -%}
     drop function if exists {{ dbt_pca._get_udtf_name(
-      table=input_relation,
       materialization_options=pca_config.get("materialization_options"),
       pca_num=pca_num) }}({{ ', '.join(types_list) }});
   {%- endset %}
@@ -347,7 +368,11 @@ $$;
     {% endfor %}
     {% set _final = [] %}
     {% for i in ((index or []) + columns + (values or [])) %}
-      {% do _final.append(i ~ '::' ~ _type_maps[i]) %}
+      {% if "::" in i %}
+        {% do _final.append(i) %}
+      {% else %}
+        {% do _final.append(i ~ '::' ~ _type_maps[i]) %}
+      {% endif %}
     {% endfor %}
     {{ return(dbt_pca._list_with_alias(_final, 't') ) }}
   {% endif %}
@@ -375,6 +400,7 @@ $$;
   {% if
       table is not none
       and table is not undefined
+      and table.identifier is not undefined
       and
       (
         (index or [] | length) != (index_types or [] | length)
@@ -398,49 +424,66 @@ $$;
   {% endif %}
   {% set li = [] %}
   {% for i in (index or []) %}
-    {% if index_types %}
-      {% set typ = index_types[loop.index-1] %}
-    {% elif i in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(i) %}
-    {% elif i.lower() in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(i.lower()) %}
+    {% if "::" in i %}
+      {% set _i = i.split("::")[0] %}
+      {% set typ = i.split("::")[1] %}
     {% else %}
-      {% set typ = 'varchar' %}
+      {% set _i = i %}
+      {% if index_types %}
+        {% set typ = index_types[loop.index-1] %}
+      {% elif _i in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(_i) %}
+      {% elif _i.lower() in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(_i.lower()) %}
+      {% else %}
+        {% set typ = 'varchar' %}
+      {% endif %}
     {% endif %}
-    {% do li.append({'col': i, 'type': typ}) %}
+    {% do li.append({'col': _i, 'type': typ}) %}
   {% endfor %}
   {% for i in columns %}
-    {% if column_types %}
-      {% set typ = column_types[loop.index-1] %}
-    {% elif i in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(i) %}
-    {% elif i.lower() in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(i.lower()) %}
-    {% elif values is none %}
-      {% set typ = 'float' %}
+    {% if "::" in i %}
+      {% set _i = i.split("::")[0] %}
+      {% set typ = i.split("::")[1] %}
     {% else %}
-      {% set typ = 'varchar' %}
+      {% set _i = i %}
+      {% if column_types %}
+        {% set typ = column_types[loop.index-1] %}
+      {% elif _i in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(_i) %}
+      {% elif _i.lower() in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(_i.lower()) %}
+      {% elif values is none %}
+        {% set typ = 'float' %}
+      {% else %}
+        {% set typ = 'varchar' %}
+      {% endif %}
     {% endif %}
-    {% do li.append({'col': i, 'type': typ}) %}
+    {% do li.append({'col': _i, 'type': typ}) %}
   {% endfor %}
   {% if values is not none %}
-    {% if values_type %}
-      {% set typ = values_type %}
-    {% elif values in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(values) %}
-    {% elif values.lower() in rel_columns_mapping %}
-      {% set typ = rel_columns_mapping.get(values.lower()) %}
+    {% if "::" in values %}
+      {% set _values = values.split("::")[0] %}
+      {% set typ = values.split("::")[1] %}
     {% else %}
-      {% set typ = 'float' %}
+      {% if values_type %}
+        {% set typ = values_type %}
+      {% elif values in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(values) %}
+      {% elif values.lower() in rel_columns_mapping %}
+        {% set typ = rel_columns_mapping.get(values.lower()) %}
+      {% else %}
+        {% set typ = 'float' %}
+      {% endif %}
     {% endif %}
-    {% do li.append({'col': values, 'type': typ}) %}
+    {% do li.append({'col': _values, 'type': typ}) %}
   {% endif %}
   {{ return(li) }}
 {% endmacro %}
 
-{% macro _get_udtf_name(table, materialization_options, pca_num) %}
-  {% set udf_database = dbt_pca._get_materialization_option('udf_database', materialization_options, table.database) %}
-  {% set udf_schema = dbt_pca._get_materialization_option('udf_schema', materialization_options, table.schema) %}
+{% macro _get_udtf_name(materialization_options, pca_num) %}
+  {% set udf_database = dbt_pca._get_materialization_option('udf_database', materialization_options, model.database) %}
+  {% set udf_schema = dbt_pca._get_materialization_option('udf_schema', materialization_options, model.schema) %}
   {% if udf_database and udf_schema %}
     {{ return(
       adapter.quote_as_configured(udf_database, 'identifier')
@@ -473,7 +516,7 @@ $$;
   {% set rel_columns_mapping = {} %}
   {% set requires_columns_as_pk = output in ['loadings', 'loadings-long', 'loadings-wide', 'eigenvectors-wide', 'coefficients-wide', 'projections', 'projections-long'] %}
   {% set requires_index = output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
-  {% if dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)
+  {% if table.identifier is not undefined and dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)
   %}
     {# In this case, not all types are explicitly defined, so we want to attempt
        querying the database for the types. #}
@@ -499,16 +542,24 @@ $$;
     {% do columns_li.append(dbt_pca._get_output_option("column_column_name", output_options, "col") ~ ' varchar') %}
   {% elif requires_columns_as_pk and values is not none %}
     {% for i in columns %}
-      {% if column_types %}
-        {% set typ = column_types[loop.index-1] %}
-      {% elif i in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(i) %}
-      {% elif i.lower() in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(i.lower()) %}
+      {% if "::" in i %}
+        {% set _i = i.split("::")[0] %}
+        {% set typ = i.split("::")[1] %}
       {% else %}
-        {% set typ = 'varchar' %}
+        {% set _i = i %}
+        {% if column_types %}
+          {% set typ = column_types[loop.index-1] %}
+        {% elif _i in rel_columns_mapping %}
+          {% set typ = rel_columns_mapping.get(_i) %}
+        {% elif _i.lower() in rel_columns_mapping %}
+          {% set typ = rel_columns_mapping.get(_i.lower()) %}
+        {% elif values is none %}
+          {% set typ = 'float' %}
+        {% else %}
+          {% set typ = 'varchar' %}
+        {% endif %}
       {% endif %}
-      {% do columns_li.append(i ~ ' ' ~ typ) %}
+      {% do li.append({'col': _i, 'type': typ}) %}
     {% endfor %}
   {% elif output in ['eigenvectors-wide-transposed', 'coefficients-wide-transposed', 'projections-wide', 'projections-untransformed-wide'] %}
     {% for i in columns %}
@@ -518,16 +569,22 @@ $$;
 
   {% if output in ['factors', 'factors-long', 'factors-wide', 'projections', 'projections-long', 'projections-wide', 'projections-untransformed-wide'] %}
     {% for i in (index or []) %}
-      {% if index_types %}
-        {% set typ = index_types[loop.index-1] %}
-      {% elif i in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(i) %}
-      {% elif i.lower() in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(i.lower()) %}
+      {% if "::" in i %}
+        {% set _i = i.split("::")[0] %}
+        {% set typ = i.split("::")[1] %}
       {% else %}
-        {% set typ = 'varchar' %}
+        {% set _i = i %}
+        {% if index_types %}
+          {% set typ = index_types[loop.index-1] %}
+        {% elif _i in rel_columns_mapping %}
+          {% set typ = rel_columns_mapping.get(_i) %}
+        {% elif _i.lower() in rel_columns_mapping %}
+          {% set typ = rel_columns_mapping.get(_i.lower()) %}
+        {% else %}
+          {% set typ = 'varchar' %}
+        {% endif %}
       {% endif %}
-      {% do index_li.append(i ~ ' ' ~ typ) %}
+      {% do li.append({'col': _i, 'type': typ}) %}
     {% endfor %}
   {% endif %}
 
