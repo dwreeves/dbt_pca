@@ -138,7 +138,7 @@
 {%- endfor -%}
 {%- set _index = index -%}
 {%- set index = [] -%}
-{%- for c in _index -%}
+{%- for c in (_index or []) -%}
   {%- do index.append(c.split("::")[0]) -%}
 {%- endfor -%}
 {%- if values is none -%}
@@ -159,7 +159,7 @@
 {%- set display_coefficients = dbt_pca._get_output_option("display_coefficients", output_options, true) -%}
 {%- set display_eigenvalues = dbt_pca._get_output_option("display_eigenvalues", output_options, true) -%}
 create or replace function {{ dbt_pca._get_udtf_name(materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_signature(table, _index, _columns, _values, materialization_options) }})
-returns table ({{ dbt_pca._get_udtf_return_signature(table, index, columns, values, output, ncomp, materialization_options, output_options) }})
+returns table ({{ dbt_pca._get_udtf_return_signature(table, _index, _columns, _values, output, ncomp, materialization_options, output_options) }})
 language python
 runtime_version = 3.9
 packages=('pandas', 'numpy', 'statsmodels')
@@ -466,12 +466,13 @@ $$;
       {% set _values = values.split("::")[0] %}
       {% set typ = values.split("::")[1] %}
     {% else %}
+      {% set _values = values %}
       {% if values_type %}
         {% set typ = values_type %}
       {% elif values in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(values) %}
+        {% set typ = rel_columns_mapping.get(_values) %}
       {% elif values.lower() in rel_columns_mapping %}
-        {% set typ = rel_columns_mapping.get(values.lower()) %}
+        {% set typ = rel_columns_mapping.get(_values.lower()) %}
       {% else %}
         {% set typ = 'float' %}
       {% endif %}
@@ -559,7 +560,7 @@ $$;
           {% set typ = 'varchar' %}
         {% endif %}
       {% endif %}
-      {% do li.append({'col': _i, 'type': typ}) %}
+      {% do columns_li.append(_i ~ ' ' ~ typ) %}
     {% endfor %}
   {% elif output in ['eigenvectors-wide-transposed', 'coefficients-wide-transposed', 'projections-wide', 'projections-untransformed-wide'] %}
     {% for i in columns %}
@@ -584,7 +585,7 @@ $$;
           {% set typ = 'varchar' %}
         {% endif %}
       {% endif %}
-      {% do li.append({'col': _i, 'type': typ}) %}
+      {% do index_li.append(_i ~ ' ' ~ typ) %}
     {% endfor %}
   {% endif %}
 

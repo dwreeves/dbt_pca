@@ -1,4 +1,4 @@
-{{ config(materialized='table', tags=['skip-snowflake']) }}
+{{ config(materialized='table') }}
 with data as (
   select idx as my_index_column, 'x1' as my_columns_column, x1 as my_values_column
   from {{ ref('collinear_matrix') }}
@@ -15,7 +15,7 @@ with data as (
   select idx as my_index_column, 'x5' as my_columns_column, x5 as my_values_column
   from {{ ref('collinear_matrix') }}
 )
-{% if adapter.type() != 'snowflake' %}
+
 select * from {{
   dbt_pca.pca(
     table='data',
@@ -25,6 +25,3 @@ select * from {{
     ncomp=2
   )
 }}
-{% else %}
-select * from data where false limit 0
-{% endif %}

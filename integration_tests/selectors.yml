@@ -2,10 +2,11 @@ selectors:
   - name: duckdb-selector
     definition: 'fqn:*'
   - name: snowflake-selector
-    definition:
-      union:
-      - 'fqn:*'
-      - exclude:
-        - '@tag:skip-snowflake'
+    definition: 'fqn:*'
+#    definition:
+#      union:
+#      - 'fqn:*'
+#      - exclude:
+#        - '@tag:skip-snowflake'
   - name: clickhouse-selector
     definition: 'fqn:*'
