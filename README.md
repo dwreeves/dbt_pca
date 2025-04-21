@@ -269,6 +269,53 @@ from predictions
 order by abs(residual) desc
 ```
 
+Here is a Snowflake specific example using Cortex vector embeddings to construct principal components over an embedding space.
+The resulting table of components (using `output='factors-wide'`) can then be used as features in a machine learning model.
+(This is very similar to something I am doing right now at my current company!)
+
+```sql
+{{
+  config(
+    materialized="table"
+  )
+}}
+
+with
+
+base as (
+
+  select
+    id,
+    /* Note: it is STRONGLY recommended you precompute embeddings in a separate incremental materialization,
+       since the cost of rerunning this function can be quite high. */
+    snowflake.cortex.embed_text_768('snowflake-arctic-embed-m', description) as description_embedding
+  from {{ ref("entity") }}
+
+),
+
+reshaped_embeddings as (
+
+    select
+      b.id,
+      v.index as embedding_index,
+      v.value::float as cell
+    from base as b,
+    lateral flatten(input => b.description_embedding::array) as v
+
+)
+
+select *
+from {{ dbt_pca.pca(
+  table='reshaped_embeddings',
+  columns='embedding_index::integer',
+  values='cell',
+  index='id::integer',
+  ncomp=10,
+  output='factors-wide'
+) }}
+order by id
+```
+
 Of course, there are many other things you can do with **dbt_pca** than just the above.
 Hopefully this example inspires you to explore all the possibilities!
 
