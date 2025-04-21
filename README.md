@@ -344,6 +344,11 @@ base as (
     id,
     description_embedding
   from {{ ref("entity") }}
+  {% if is_incremental() %}
+  /* This makes it so the query only runs at the start of each month. */
+  where current_timestamp() >= (select date_trunc(month, dateadd(month, 1, max(last_updated))) from {{ this }})
+  {% endif %}
+
 
 ),
 
@@ -369,11 +374,7 @@ from {{ dbt_pca.pca(
   standardize=false,
   output='factors-wide'
 ) }}
-{% if is_incremental() %}
-/* This makes it so the query only runs at the start of each month. */
-where current_timestamp() >= (select date_trunc(month, dateadd(month, 1, max(last_updated))) from {{ this }})
-{% endif %}
-order by id
+order by comp, embedding_index
 
 ------------------------------------------------------------------------------------------------------------------------
 -- factors.sql
@@ -396,20 +397,23 @@ base as (
   {% if is_incremental() %}
   left join {{ this }} as t
   on t.id = e.id
-  where t.id is null or e.last_updated > t.last_updated
+  where
+    t.id is null
+    or e.last_updated > t.last_updated
+    or (select max(last_updated) from {{ ref("loadings") }}) > t.last_updated
   {% endif %}
 
 ),
 
 reshaped_embeddings as (
 
-    select
-      b.id,
-      v.index as embedding_index,
-      v.value::float as cell,
-      b.last_updated
-    from base as b,
-    lateral flatten(input => b.description_embedding::array) as v
+  select
+    b.id,
+    v.index as embedding_index,
+    v.value::float as cell,
+    b.last_updated
+  from base as b,
+  lateral flatten(input => b.description_embedding::array) as v
 
 ),
 
@@ -419,7 +423,7 @@ factors as (
     r.id,
     l.comp,
     sum(r.cell * l.eigenvector / sqrt(l.eigenvalue)) as factor,
-    max(greatest(r.last_updated, coalesce(l.last_updated, '1970-01-01 00:00:00'))) as last_updated
+    max(greatest(r.last_updated, l.last_updated)) as last_updated
   from reshaped_embeddings as r
   inner join {{ ref("loadings") }} as l
   on r.embedding_index = l.embedding_index
