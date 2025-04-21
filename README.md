@@ -161,7 +161,7 @@ We can imagine flattening the array column into a column of strings, doing some 
 this would be a more natural way to define data for this particular PCA than widening the data.
 See [Karl Rohe's `longpca`](https://github.com/karlrohe/longpca) for a longer (pun not intentional) discussion about this.
 
-### Complex example
+### Complex example - OLS features
 
 The below example uses the [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg) alongside **dbt_pca**.
 
@@ -269,6 +269,8 @@ from predictions
 order by abs(residual) desc
 ```
 
+### Complex example - PCA on vector embeddings
+
 Here is a Snowflake specific example using Cortex vector embeddings to construct principal components over an embedding space.
 The resulting table of components (using `output='factors-wide'`) can then be used as features in a machine learning model.
 (This is very similar to something I am doing right now at my current company!)
@@ -316,7 +318,134 @@ from {{ dbt_pca.pca(
 order by id
 ```
 
-Of course, there are many other things you can do with **dbt_pca** than just the above.
+### Complex example - Incrementalized pipeline of PCA on vector embeddings
+
+If you'd like to avoid recomputing the PCA each time, then you can run this as an incremental model, store the default output (`output='loadings'`),
+and compute factors manually using the loadings.
+For best results, set `demean=false` and `standardize=false`, and optionally demean/standardize the data yourself and store those means and stdevs separately.
+The below example shows a 2-step dbt pipeline that computes PCA loadings once every month and updates factors on every run.
+This is achieved by computing the factors manually from the loadings.
+Loadings in the below example are normalized via dividing by the sqrt of the eigenvalue.
+
+```sql
+-- loadings.sql
+{{
+  config(
+    materialized="incremental",
+    unique_key=["comp", "embedding_index"]
+  )
+}}
+
+with
+
+base as (
+
+  select
+    id,
+    description_embedding
+  from {{ ref("entity") }}
+
+),
+
+reshaped_embeddings as (
+
+    select
+      b.id,
+      v.index as embedding_index,
+      v.value::float as cell
+    from base as b,
+    lateral flatten(input => b.description_embedding::array) as v
+
+)
+
+select *, current_timestamp() as last_updated
+from {{ dbt_pca.pca(
+  table='reshaped_embeddings',
+  columns='embedding_index::integer',
+  values='cell',
+  index='id::integer',
+  ncomp=10,
+  demean=false,
+  standardize=false,
+  output='factors-wide'
+) }}
+{% if is_incremental() %}
+/* This makes it so the query only runs at the start of each month. */
+where current_timestamp() >= (select date_trunc(month, dateadd(month, 1, max(last_updated))) from {{ this }})
+{% endif %}
+order by id
+
+------------------------------------------------------------------------------------------------------------------------
+-- factors.sql
+{{
+  config(
+    materialized="incremental",
+    unique_key=["id"]
+  )
+}}
+
+with
+
+base as (
+
+  select
+    e.id,
+    e.description_embedding,
+    e.last_updated
+  from {{ ref("entity") }} as e
+  {% if is_incremental() %}
+  left join {{ this }} as t
+  on t.id = e.id
+  where t.id is null or e.last_updated > t.last_updated
+  {% endif %}
+
+),
+
+reshaped_embeddings as (
+
+    select
+      b.id,
+      v.index as embedding_index,
+      v.value::float as cell,
+      b.last_updated
+    from base as b,
+    lateral flatten(input => b.description_embedding::array) as v
+
+),
+
+factors as (
+
+  select
+    r.id,
+    l.comp,
+    sum(r.cell * l.eigenvector / sqrt(l.eigenvalue)) as factor,
+    max(greatest(r.last_updated, coalesce(l.last_updated, '1970-01-01 00:00:00'))) as last_updated
+  from reshaped_embeddings as r
+  inner join {{ ref("loadings") }} as l
+  on r.embedding_index = l.embedding_index
+  group by r.id, l.comp
+
+)
+
+select
+  id,
+  max(cast when comp = 0 then factor end) as factor_0,
+  max(cast when comp = 1 then factor end) as factor_1,
+  max(cast when comp = 2 then factor end) as factor_2,
+  max(cast when comp = 3 then factor end) as factor_3,
+  max(cast when comp = 4 then factor end) as factor_4,
+  max(cast when comp = 5 then factor end) as factor_5,
+  max(cast when comp = 6 then factor end) as factor_6,
+  max(cast when comp = 7 then factor end) as factor_7,
+  max(cast when comp = 8 then factor end) as factor_8,
+  max(cast when comp = 9 then factor end) as factor_9,
+  max(last_updated) as last_updated
+from factors
+group by id
+order by id
+```
+
+Of course, there are many other things you can do with **dbt_pca** than just the above things.
 Hopefully this example inspires you to explore all the possibilities!
 
 # API
