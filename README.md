@@ -433,16 +433,16 @@ factors as (
 
 select
   id,
-  max(cast when comp = 0 then factor end) as factor_0,
-  max(cast when comp = 1 then factor end) as factor_1,
-  max(cast when comp = 2 then factor end) as factor_2,
-  max(cast when comp = 3 then factor end) as factor_3,
-  max(cast when comp = 4 then factor end) as factor_4,
-  max(cast when comp = 5 then factor end) as factor_5,
-  max(cast when comp = 6 then factor end) as factor_6,
-  max(cast when comp = 7 then factor end) as factor_7,
-  max(cast when comp = 8 then factor end) as factor_8,
-  max(cast when comp = 9 then factor end) as factor_9,
+  max(case when comp = 0 then factor end) as factor_0,
+  max(case when comp = 1 then factor end) as factor_1,
+  max(case when comp = 2 then factor end) as factor_2,
+  max(case when comp = 3 then factor end) as factor_3,
+  max(case when comp = 4 then factor end) as factor_4,
+  max(case when comp = 5 then factor end) as factor_5,
+  max(case when comp = 6 then factor end) as factor_6,
+  max(case when comp = 7 then factor end) as factor_7,
+  max(case when comp = 8 then factor end) as factor_8,
+  max(case when comp = 9 then factor end) as factor_9,
   max(last_updated) as last_updated
 from factors
 group by id
@@ -843,6 +843,13 @@ The Snowflake implementation cheats by wrapping `sm.PCA()` (there is no other wa
 Because it runs as a Python UDF, for heavy workloads, "Snowpark-optimized" warehouses are recommended.
 These warehouses allow for additional memory to be allocated for a given warehouse size, relative to the amount of compute power of the warehouse instance.
 Read more about Snowpark-optimized warehouses in the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/warehouses-snowpark-optimized).
+
+Snowflake UDTFs have a limit of 30 minutes of runtime per call (in practice, Snowflake allows the UDTF calls to go over a little bit to ~40 minutes).
+The Snowflake implementation of **dbt-pca** does not batch calls at all, neither by partitioning rows\* nor by iterative calculations of components; everything is done in a single call, so that is a 30-minute limitation for the whole PCA calculation.
+This means for working on very large data (e.g. anything larger than `ncomp=20` on a `1e6 x 1e3` matrix in a `MEMORY_64X_x86` `XXLARGE` warehouse), you may run into issues with default performance settings.
+
+\* There exist methods for [incrementalizing PCA](https://scikit-learn.org/stable/auto_examples/decomposition/plot_incremental_pca.html) that could be used to partition the data,
+but these are not currently used by **dbt-pca**.
 
 For the Snowflake implementation, column types can be cast explicitly and this casting will be used for the UDF definition.
 This can be useful when referencing a CTE, from which column types cannot be inferred. (Column types are inferred for `ref()`'s and `source()`'s only.)
