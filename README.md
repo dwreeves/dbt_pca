@@ -433,6 +433,7 @@ factors as (
 
 select
   id,
+  (array_agg(factor) within group (order by comp))::vector(float, 10) as factor_vec,
   max(case when comp = 0 then factor end) as factor_0,
   max(case when comp = 1 then factor end) as factor_1,
   max(case when comp = 2 then factor end) as factor_2,
@@ -448,6 +449,9 @@ from factors
 group by id
 order by id
 ```
+
+You can then use the vector representation (`factor_vec`) for cosine similarity calculations,
+or use the `factor_*` columns as features in a machine learning model.
 
 Of course, there are many other things you can do with **dbt_pca** than just the above things.
 Hopefully this example inspires you to explore all the possibilities!
