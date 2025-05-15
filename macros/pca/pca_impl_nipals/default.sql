@@ -93,7 +93,7 @@
     schema=pca_config["table"]["schema"],
     identifier=pca_config["table"]["identifier"]
   ) %}
-  {% set comp_relation = make_intermediate_relation(this, suffix=dbt_pca._temp_table_suffix(pca_count, comp_num)) %}
+  {% set comp_relation = make_intermediate_relation(this, suffix=dbt_pca._temp_table_suffix(pca_num, comp_num)) %}
   {% do log('Creating temp relation '~comp_relation) %}
   {% set _sql = dbt_pca._pca_tmp_table(
     table=input_relation,

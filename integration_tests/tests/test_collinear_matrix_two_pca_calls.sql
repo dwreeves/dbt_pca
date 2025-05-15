@@ -1,4 +1,3 @@
-/* This is testing whether two calls to pca() is properly supported. */
 with expected as (
   select
     1 as i,
