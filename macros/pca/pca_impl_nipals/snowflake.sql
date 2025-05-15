@@ -26,7 +26,7 @@
     "table": {
       "cte": (table.identifier is undefined or table.is_cte),
       "database": table.database if table.database is not undefined else none,
-      "schema": table.database if table.schema is not undefined else none,
+      "schema": table.schema if table.schema is not undefined else none,
       "identifier": table.identifier if table.identifier is not undefined else table
     },
     "index": index,
@@ -56,21 +56,21 @@
   {% if table.identifier is undefined or dbt_pca._get_materialization_option('cast_types_to_udf', materialization_options, not dbt_pca._get_materialization_option('infer_function_signature_types', materialization_options, true)) %}
     {% set arg_data = dbt_pca._get_udtf_function_signature_data(table, index, columns, values, materialization_options) %}
     {% set final_query %}(
-  -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
+  -- !DBT_PCA_CONFIG:{{ (pca_num | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
   select p.*
   from {{ table }} as t,
   table(
-    {{ dbt_pca._get_udtf_name(materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values, cast_types=true, arg_data=arg_data) }})
+    {{ dbt_pca._get_udtf_name(materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_args(index, columns, values, cast_types=true, arg_data=arg_data) }})
     over (partition by 1)
   ) as p
 ){% endset %}
   {% else %}
   {% set final_query %}(
-  -- !DBT_PCA_CONFIG:{{ (__count | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
+  -- !DBT_PCA_CONFIG:{{ (pca_num | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
   select p.*
   from {{ table }} as t,
   table(
-    {{ dbt_pca._get_udtf_name(materialization_options, __count) }}({{ dbt_pca._get_udtf_function_args(index, columns, values) }})
+    {{ dbt_pca._get_udtf_name(materialization_options, pca_num) }}({{ dbt_pca._get_udtf_function_args(index, columns, values) }})
     over (partition by 1)
   ) as p
 ){% endset %}
