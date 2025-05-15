@@ -68,7 +68,7 @@
       {% do log(
         "Warning: when table= is not a `ref()` or a `source()`, pca() cannot be calculated in steps,"
         " which may significantly degrade performance in Clickhouse."
-        " It is suggested you set table= to a `ref()` or a `source()`."
+        " It is suggested you set table= to a `ref()` or a `source()` to a non-ephemeral node (views are OK)."
         " To disable this warning message, explicitly set calculate_in_steps to false: "
         " `materialization_options={'calculate_in_steps': false}`.",
         info=true
