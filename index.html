@@ -1,0 +1,1313 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Docs for dbt_pca">
+      
+      
+        <meta name="author" content="Daniel Reeves">
+      
+      
+        <link rel="canonical" href="https://dwreeves.github.io/dbt_pca/">
+      
+      
+      
+      <link rel="icon" href="img/dbt-pca-favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
+    
+    
+      
+        <title>dbt_pca</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.558e4712.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Opens+Sans:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Opens Sans";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="css/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#overview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="dbt_pca" class="md-header__button md-logo" aria-label="dbt_pca" data-md-component="logo">
+      
+  <img src="img/dbt-pca-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            dbt_pca
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Home
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="light-blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/dwreeves/dbt_pca/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    dbt_pca
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="dbt_pca" class="md-nav__button md-logo" aria-label="dbt_pca" data-md-component="logo">
+      
+  <img src="img/dbt-pca-logo.png" alt="logo">
+
+    </a>
+    dbt_pca
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/dwreeves/dbt_pca/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    dbt_pca
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        Home
+      </a>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+
+<p align="center">
+<img src="img/dbt-pca-banner-light.png#only-light" align="center">
+<img src="img/dbt-pca-banner-dark.png#only-dark" align="center">
+</p>
+
+<blockquote>
+<p>[!WARNING]
+This project is in <strong>beta</strong> and is not fully publicly released.
+The API is subject to breakage and bugs may occur.
+Please wait until <strong>0.1.0</strong> for full release.</p>
+<p>The following features are currently missing and are being prioritized for a <strong>0.1.0</strong> release:
+- Missing value support (but probably not the EM algorithm algorithm for the time being).
+- ~~Support for weights~~
+- ~~Snowflake support~~
+- (Maybe) Fuller, paginated documentation on Github Pages.
+- ~~Remove custom materialization~~</p>
+</blockquote>
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/dwreeves/dbt_pca/main/docs/src/img/dbt-pca-banner-dark.png#readme-logo">
+        <img src="https://raw.githubusercontent.com/dwreeves/dbt_pca/main/docs/src/img/dbt-pca-banner-light.png#readme-logo" alt="dbt_pca logo">
+    </picture>
+</p>
+<p align="center">
+    <em>PCA in SQL, powered by dbt.</em>
+</p>
+<p align="center">
+    <img src="https://github.com/dwreeves/dbt_pca/workflows/tests/badge.svg" alt="Tests badge">
+    <img src="https://github.com/dwreeves/dbt_pca/workflows/docs/badge.svg" alt="Docs badge">
+</p>
+
+<h1 id="overview">Overview</h1>
+<p><strong>dbt_pca</strong> is an easy way to perform principal component analysis (PCA) in SQL using dbt.</p>
+<p>Reasons to use <strong>dbt_pca</strong>:</p>
+<ul>
+<li>📈 <strong>PCA in pure SQL:</strong> With the power of recursive CTEs and math, it is possible to implement PCA in pure SQL. Most SQL engines (even OLAP engines) do not have an implementation of PCA, so this fills a valuable niche. <strong><code>dbt_pca</code> implements a true implementation of PCA via the NIPALS algorithm.</strong></li>
+<li>📱 <strong>Simple interface:</strong> Just define a <code>table=</code> (which works with <code>ref()</code>, <code>source()</code>, and CTEs), your column(s) with <code>columns=</code>, an index with <code>index=</code>, and you're all set! Both "wide" and "long" data formats are supported.</li>
+<li>🤸‍ <strong>Flexibility:</strong> Tons of output options available to return things the way you want: choose from eigenvectors, factors, and projections in both wide and long formats.</li>
+<li>🤗 <strong>User friendly:</strong> The API provides comprehensive feedback on input errors.</li>
+<li>💪 <strong>Durable and tested:</strong> Everything in this code base is tested against equivalent PCA's performed in Statsmodels with high precision assertions (between 10e-5 to 10e-7, depending on the database engine).</li>
+<li>🪄 <strong>Deep under-the-hood magic:</strong> In the pursuit of making this as easy as possible to implement across databases, tons of dbt dark magic wizardry happens under the hood. I spent weeks of my life so you could save seconds of yours!</li>
+</ul>
+<p><strong>Currently only DuckDB, Clickhouse, and Snowflake are supported.</strong></p>
+<p><em>Note: If you enjoy this project, you may also enjoy my other dbt machine learning project, <a href="https://github.com/dwreeves/dbt_linreg"><strong>dbt_linreg</strong></a>.</em> 😊</p>
+<h1 id="supported-databases">Supported Databases</h1>
+<p><strong>dbt_pca</strong> works with the following databases:</p>
+<table>
+<thead>
+<tr>
+<th>Database</th>
+<th>Supported</th>
+<th>Precision asserted in CI*</th>
+<th>Supported since version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DuckDB</strong></td>
+<td>✅</td>
+<td>10e-7</td>
+<td>0.1.0</td>
+</tr>
+<tr>
+<td><strong>Clickhouse</strong></td>
+<td>✅</td>
+<td>10e-5</td>
+<td>0.1.0</td>
+</tr>
+<tr>
+<td><strong>Snowflake</strong></td>
+<td>✅</td>
+<td>10e-7</td>
+<td>0.1.0</td>
+</tr>
+</tbody>
+</table>
+<p>Please see the <strong>Performance optimization</strong> section on how to get the best performance out of each database.</p>
+<blockquote>
+<p><em>* Precision is comparison to <code>PCA(method='nipals')</code> in Statsmodels. In some cases, precision depends on the implementation method; precision is based on suggested implementation.</em></p>
+</blockquote>
+<h1 id="installation">Installation</h1>
+<p>dbt-core <code>&gt;=1.4.0</code> is required to install <code>dbt_pca</code>.</p>
+<p>Add this the <code>packages:</code> list your dbt project's <code>packages.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">package</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dwreeves/dbt_pca&quot;</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.0.6&quot;</span>
+</code></pre></div>
+<p>The full file will look something like this:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">packages</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># ...</span>
+<span class="w">  </span><span class="c1"># Other packages here</span>
+<span class="w">  </span><span class="c1"># ...</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">package</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dwreeves/dbt_pca&quot;</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.0.6&quot;</span>
+</code></pre></div>
+<h1 id="examples">Examples</h1>
+<h3 id="simple-example-wide-input-format">Simple example (wide input format)</h3>
+<p>The following example runs PCA on 5 columns <code>x1, x2, x3, x4, x5</code>, using data in the dbt model named <code>collinear_matrix</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;table&quot;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">  </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;collinear_matrix&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;idx&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x1&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x2&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x3&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x4&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x5&#39;</span><span class="p">],</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">3</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">pca</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>comp</th>
+<th>col</th>
+<th>eigenvector</th>
+<th>eigenvalue</th>
+<th>coefficient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>x1</td>
+<td>0.23766561884860857</td>
+<td>29261.18329671314</td>
+<td>40.6548443559801</td>
+</tr>
+<tr>
+<td>0</td>
+<td>x2</td>
+<td>-0.5710963390821377</td>
+<td>29261.183296713134</td>
+<td>-97.69117169801471</td>
+</tr>
+<tr>
+<td>0</td>
+<td>x3</td>
+<td>-0.5730424984614262</td>
+<td>29261.18329671314</td>
+<td>-98.02407978560524</td>
+</tr>
+<tr>
+<td>0</td>
+<td>x4</td>
+<td>-0.5375734671620216</td>
+<td>29261.18329671314</td>
+<td>-91.9567825723166</td>
+</tr>
+<tr>
+<td>0</td>
+<td>x5</td>
+<td>0.0010428157925962138</td>
+<td>29261.183296713138</td>
+<td>0.17838303220022225</td>
+</tr>
+<tr>
+<td>1</td>
+<td>x1</td>
+<td>-0.0662409860256577</td>
+<td>10006.031828705965</td>
+<td>-6.626096072806324</td>
+</tr>
+<tr>
+<td>1</td>
+<td>x2</td>
+<td>-0.001674528192609409</td>
+<td>10006.031828705967</td>
+<td>-0.16750331398380647</td>
+</tr>
+<tr>
+<td>1</td>
+<td>x3</td>
+<td>-0.0027280948128929504</td>
+<td>10006.031828705962</td>
+<td>-0.27289174588904075</td>
+</tr>
+<tr>
+<td>1</td>
+<td>x4</td>
+<td>-0.022663548107992145</td>
+<td>10006.031828705964</td>
+<td>-2.2670382209597086</td>
+</tr>
+<tr>
+<td>1</td>
+<td>x5</td>
+<td>0.9975411013143917</td>
+<td>10006.031828705964</td>
+<td>99.78419058137138</td>
+</tr>
+<tr>
+<td>2</td>
+<td>x1</td>
+<td>0.9637584043866467</td>
+<td>8920.76195540799</td>
+<td>91.02677443759194</td>
+</tr>
+<tr>
+<td>2</td>
+<td>x2</td>
+<td>0.09591639009268058</td>
+<td>8920.761955407994</td>
+<td>9.059282457195334</td>
+</tr>
+<tr>
+<td>2</td>
+<td>x3</td>
+<td>0.10093338977915689</td>
+<td>8920.761955407994</td>
+<td>9.533137000756994</td>
+</tr>
+<tr>
+<td>2</td>
+<td>x4</td>
+<td>0.2167293438854099</td>
+<td>8920.761955407994</td>
+<td>20.470040012174913</td>
+</tr>
+<tr>
+<td>2</td>
+<td>x5</td>
+<td>0.06935867943078204</td>
+<td>8920.761955407997</td>
+<td>6.550912385405418</td>
+</tr>
+</tbody>
+</table>
+<p>The default output for <strong>dbt_pca</strong> is eigenvectors + coefficients + eigenvalues, although you can configure to output principal components / factors and projections as well with the <code>output='...'</code> argument.</p>
+<p>Also, <code>collinear_matrix</code> is one of the test cases, so you can try this yourself!</p>
+<h3 id="simple-example-long-input-format">Simple example (long input format)</h3>
+<p>The below example is equivalent to the previous example.</p>
+<p>By setting an argument for <code>values=...</code>, <strong>dbt_pca</strong> will infer that your data is long-formatted.</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;table&quot;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span><span class="w"> </span><span class="n">preprocessed_data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x1&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">c</span><span class="p">,</span><span class="w"> </span><span class="n">x1</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span>
+<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="k">all</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x2&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">c</span><span class="p">,</span><span class="w"> </span><span class="n">x2</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span>
+<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="k">all</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x3&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">c</span><span class="p">,</span><span class="w"> </span><span class="n">x3</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span>
+<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="k">all</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x4&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">c</span><span class="p">,</span><span class="w"> </span><span class="n">x4</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span>
+<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="k">all</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x5&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">c</span><span class="p">,</span><span class="w"> </span><span class="n">x5</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">x</span>
+<span class="p">)</span>
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">  </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;preprocessed_data&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;idx&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">values</span><span class="o">=</span><span class="s1">&#39;x&#39;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">pca</span>
+</code></pre></div>
+<p>Data that we want to run PCA on very often comes long-formatted by default.
+For example, imagine a database containing movies, and movies can be tagged as being in multiple genres as an array.
+We can imagine flattening the array column into a column of strings, doing some additional preprocessing and then running PCA where <code>rows='movie_id'</code>, <code>columns='genre'</code>, and <code>values='tagged_as_genre'</code>;
+this would be a more natural way to define data for this particular PCA than widening the data.
+See <a href="https://github.com/karlrohe/longpca">Karl Rohe's <code>longpca</code></a> for a longer (pun not intentional) discussion about this.</p>
+<h3 id="complex-example-ols-features">Complex example - OLS features</h3>
+<p>The below example uses the <a href="https://github.com/dwreeves/dbt_linreg"><strong>dbt_linreg</strong></a> alongside <strong>dbt_pca</strong>.</p>
+<p>We have a table called <code>movies</code>, which contains ratings and tags for each movie in the database.</p>
+<p>We want to see which movies over or under-perform based on their tags,
+e.g. perhaps the tag <code>foo</code> usually indicates a poor quality movie, but some movies tagged with <code>foo</code> are exceptionally good.</p>
+<p>We can do the following:</p>
+<ul>
+<li>Define a matrix with the following structure:</li>
+<li>Rows are movies</li>
+<li>Columns are tags</li>
+<li>Cells are <code>1</code> if movie has the tag, otherwise <code>0</code></li>
+<li>Use <code>output='factors-wide'</code> to output principal components in a CTE with the following columns: <code>id</code>, <code>comp_0</code>, <code>comp_1</code>, <code>comp_2</code>, <code>comp_3</code>, <code>comp_4</code>.</li>
+<li>Use the principal components as features in a linear regression.</li>
+<li>Predict the movie rating using the regression coefficients.</li>
+<li>Return the predictions sorted by <code>abs(residual) desc</code>.</li>
+</ul>
+<p>Here is what that would look like:</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;table&quot;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span>
+
+<span class="n">movie_tags</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">unnest</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span>
+<span class="w">    </span><span class="mi">1</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">has_tag</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;movies&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="p">),</span>
+
+<span class="n">pca</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">    </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">      </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;movie_tags&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;tag&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="k">values</span><span class="o">=</span><span class="s1">&#39;has_tag&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">missing</span><span class="o">=</span><span class="s1">&#39;zero&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="k">output</span><span class="o">=</span><span class="s1">&#39;factors-wide&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">5</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">  </span><span class="err">}}</span>
+
+<span class="p">),</span>
+
+<span class="n">movie_rating_with_principal_components</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">rating</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">comp_0</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">comp_1</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">comp_2</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">comp_3</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">comp_4</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;movies&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">m</span>
+
+<span class="p">),</span>
+
+<span class="n">linear_regression_coefficients</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">    </span><span class="n">dbt_linreg</span><span class="p">.</span><span class="n">ols</span><span class="p">(</span>
+<span class="w">      </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;movie_rating_with_principal_components&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">endog</span><span class="o">=</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">exog</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;comp_0&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;comp_1&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;comp_2&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;comp_3&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;comp_4&#39;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">  </span><span class="err">}}</span>
+
+<span class="p">),</span>
+
+<span class="n">predictions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">m</span><span class="p">.</span><span class="n">rating</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">actual_rating</span><span class="p">,</span>
+<span class="w">    </span><span class="n">l</span><span class="p">.</span><span class="n">const</span>
+<span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">comp_0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp_0</span>
+<span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">comp_1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp_1</span>
+<span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">comp_2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp_2</span>
+<span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">comp_3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp_3</span>
+<span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">comp_4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp_4</span>
+<span class="w">    </span><span class="k">as</span><span class="w"> </span><span class="n">predicted_rating</span><span class="p">,</span>
+<span class="w">    </span><span class="n">predicted_rating</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">actual_rating</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">residual</span>
+<span class="w">  </span><span class="k">from</span>
+<span class="w">    </span><span class="n">movie_rating_with_principal_components</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">m</span><span class="p">,</span>
+<span class="w">    </span><span class="n">linear_regression_coefficients</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">l</span>
+
+<span class="p">)</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span>
+<span class="k">from</span><span class="w"> </span><span class="n">predictions</span>
+<span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="k">abs</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span><span class="w"> </span><span class="k">desc</span>
+</code></pre></div>
+<h3 id="complex-example-pca-on-vector-embeddings">Complex example - PCA on vector embeddings</h3>
+<p>Here is a Snowflake specific example using Cortex vector embeddings to construct principal components over an embedding space.
+The resulting table of components (using <code>output='factors-wide'</code>) can then be used as features in a machine learning model.
+(This is very similar to something I am doing right now at my current company!)</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;table&quot;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span>
+
+<span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="cm">/* Note: it is STRONGLY recommended you precompute embeddings in a separate incremental materialization,</span>
+<span class="cm">       since the cost of rerunning this function can be quite high. */</span>
+<span class="w">    </span><span class="n">snowflake</span><span class="p">.</span><span class="n">cortex</span><span class="p">.</span><span class="n">embed_text_768</span><span class="p">(</span><span class="s1">&#39;snowflake-arctic-embed-m&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">description_embedding</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;entity&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="p">),</span>
+
+<span class="n">reshaped_embeddings</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">    </span><span class="k">select</span>
+<span class="w">      </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">      </span><span class="n">v</span><span class="p">.</span><span class="k">index</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">embedding_index</span><span class="p">,</span>
+<span class="w">      </span><span class="n">v</span><span class="p">.</span><span class="n">value</span><span class="p">::</span><span class="nb">float</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">cell</span>
+<span class="w">    </span><span class="k">from</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">b</span><span class="p">,</span>
+<span class="w">    </span><span class="k">lateral</span><span class="w"> </span><span class="n">flatten</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">description_embedding</span><span class="p">::</span><span class="nb">array</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">v</span>
+
+<span class="p">)</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">  </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;reshaped_embeddings&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;embedding_index::integer&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="k">values</span><span class="o">=</span><span class="s1">&#39;cell&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;id::integer&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="w">  </span><span class="k">output</span><span class="o">=</span><span class="s1">&#39;factors-wide&#39;</span>
+<span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">id</span>
+</code></pre></div>
+<h3 id="complex-example-incrementalized-pipeline-of-pca-on-vector-embeddings">Complex example - Incrementalized pipeline of PCA on vector embeddings</h3>
+<p>If you'd like to avoid recomputing the PCA each time, then you can run this as an incremental model, store the default output (<code>output='loadings'</code>),
+and compute factors manually using the loadings.
+For best results, set <code>demean=false</code> and <code>standardize=false</code>, and optionally demean/standardize the data yourself and store those means and stdevs separately.
+The below example shows a 2-step dbt pipeline that computes PCA loadings once every month and updates factors on every run.
+This is achieved by computing the factors manually from the loadings.
+Loadings in the below example are normalized via dividing by the sqrt of the eigenvalue.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- loadings.sql</span>
+<span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;incremental&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">unique_key</span><span class="o">=</span><span class="p">[</span><span class="ss">&quot;comp&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;embedding_index&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span>
+
+<span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">description_embedding</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;entity&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="w">  </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_incremental</span><span class="p">()</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">  </span><span class="cm">/* This makes it so the query only runs at the start of each month. */</span>
+<span class="w">  </span><span class="k">where</span><span class="w"> </span><span class="k">current_timestamp</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">date_trunc</span><span class="p">(</span><span class="k">month</span><span class="p">,</span><span class="w"> </span><span class="n">dateadd</span><span class="p">(</span><span class="k">month</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">max</span><span class="p">(</span><span class="n">last_updated</span><span class="p">)))</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="err">}}</span><span class="p">)</span>
+<span class="w">  </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+
+
+<span class="p">),</span>
+
+<span class="n">reshaped_embeddings</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">    </span><span class="k">select</span>
+<span class="w">      </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">      </span><span class="n">v</span><span class="p">.</span><span class="k">index</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">embedding_index</span><span class="p">,</span>
+<span class="w">      </span><span class="n">v</span><span class="p">.</span><span class="n">value</span><span class="p">::</span><span class="nb">float</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">cell</span>
+<span class="w">    </span><span class="k">from</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">b</span><span class="p">,</span>
+<span class="w">    </span><span class="k">lateral</span><span class="w"> </span><span class="n">flatten</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">description_embedding</span><span class="p">::</span><span class="nb">array</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">v</span>
+
+<span class="p">)</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="k">current_timestamp</span><span class="p">()</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_updated</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">  </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;reshaped_embeddings&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;embedding_index::integer&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="k">values</span><span class="o">=</span><span class="s1">&#39;cell&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;id::integer&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="w">  </span><span class="n">demean</span><span class="o">=</span><span class="k">false</span><span class="p">,</span>
+<span class="w">  </span><span class="n">standardize</span><span class="o">=</span><span class="k">false</span><span class="p">,</span>
+<span class="w">  </span><span class="k">output</span><span class="o">=</span><span class="s1">&#39;factors-wide&#39;</span>
+<span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">embedding_index</span>
+
+<span class="c1">------------------------------------------------------------------------------------------------------------------------</span>
+<span class="c1">-- factors.sql</span>
+<span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="ss">&quot;incremental&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">unique_key</span><span class="o">=</span><span class="p">[</span><span class="ss">&quot;id&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span>
+
+<span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">description_embedding</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">last_updated</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;entity&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">e</span>
+<span class="w">  </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_incremental</span><span class="p">()</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">  </span><span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">t</span>
+<span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span>
+<span class="w">  </span><span class="k">where</span>
+<span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">null</span>
+<span class="w">    </span><span class="k">or</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">last_updated</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">last_updated</span>
+<span class="w">    </span><span class="k">or</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="k">max</span><span class="p">(</span><span class="n">last_updated</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;loadings&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">last_updated</span>
+<span class="w">  </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+
+<span class="p">),</span>
+
+<span class="n">reshaped_embeddings</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">v</span><span class="p">.</span><span class="k">index</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">embedding_index</span><span class="p">,</span>
+<span class="w">    </span><span class="n">v</span><span class="p">.</span><span class="n">value</span><span class="p">::</span><span class="nb">float</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">cell</span><span class="p">,</span>
+<span class="w">    </span><span class="n">b</span><span class="p">.</span><span class="n">last_updated</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">b</span><span class="p">,</span>
+<span class="w">  </span><span class="k">lateral</span><span class="w"> </span><span class="n">flatten</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">description_embedding</span><span class="p">::</span><span class="nb">array</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">v</span>
+
+<span class="p">),</span>
+
+<span class="n">factors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+
+<span class="w">  </span><span class="k">select</span>
+<span class="w">    </span><span class="n">r</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">l</span><span class="p">.</span><span class="n">comp</span><span class="p">,</span>
+<span class="w">    </span><span class="k">sum</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">cell</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">eigenvector</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sqrt</span><span class="p">(</span><span class="n">l</span><span class="p">.</span><span class="n">eigenvalue</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor</span><span class="p">,</span>
+<span class="w">    </span><span class="k">max</span><span class="p">(</span><span class="n">greatest</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">last_updated</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">last_updated</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_updated</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">reshaped_embeddings</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="k">inner</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;loadings&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">l</span>
+<span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">embedding_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">embedding_index</span>
+<span class="w">  </span><span class="k">group</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">comp</span>
+
+<span class="p">)</span>
+
+<span class="k">select</span>
+<span class="w">  </span><span class="n">id</span><span class="p">,</span>
+<span class="w">  </span><span class="p">(</span><span class="n">array_agg</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span><span class="w"> </span><span class="n">within</span><span class="w"> </span><span class="k">group</span><span class="w"> </span><span class="p">(</span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">comp</span><span class="p">))::</span><span class="n">vector</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_vec</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_0</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_1</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_2</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_3</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_4</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_5</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_6</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_7</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_8</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="k">case</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="k">end</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">factor_9</span><span class="p">,</span>
+<span class="w">  </span><span class="k">max</span><span class="p">(</span><span class="n">last_updated</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_updated</span>
+<span class="k">from</span><span class="w"> </span><span class="n">factors</span>
+<span class="k">group</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">id</span>
+<span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">id</span>
+</code></pre></div>
+<p>You can then use the vector representation (<code>factor_vec</code>) for cosine similarity calculations,
+or use the <code>factor_*</code> columns as features in a machine learning model.</p>
+<p>Of course, there are many other things you can do with <strong>dbt_pca</strong> than just the above things.
+Hopefully this example inspires you to explore all the possibilities!</p>
+<h1 id="api">API</h1>
+<h3 id="dbt_pcapca"><code>{{ dbt_pca.pca() }}</code></h3>
+<p>This is the core function of the <strong>dbt_pca</strong> package. Using Python typing notation, the full API for <code>dbt_pca.pca()</code> looks like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pca</span><span class="p">(</span>
+    <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">index</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">values</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ncomp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">standardize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">demean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># missing: Literal[None] = None,</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;loadings&#39;</span><span class="p">,</span>
+    <span class="n">output_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;nipals&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;nipals&#39;</span><span class="p">,</span>
+    <span class="n">method_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">materialization_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">):</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>Where:</p>
+<ul>
+<li><strong>table</strong>: Name of table or CTE to pull the data from. You can use a <code>ref()</code>, <code>source()</code>, a CTE name, or subquery.</li>
+<li><strong>index</strong>: The uniquely identifying index for each row of data. You may define one or more columns as the index. This field is <strong>required</strong> if your data is long or you want to output components. (You can also specify <code>rows=...</code> instead of <code>index=...</code> if you prefer.)</li>
+<li><strong>columns</strong>: Either a list of columns (for wide-formatted data), or a uniquely identifying index for each column of data (for long-formatted data). You may specify multiple columns even for long-formatted data; in this case the multiple columns will be treated like a multi-index.</li>
+<li><strong>values</strong>: Specifying this will make <strong>dbt_pca</strong> treat your data as long-formatted. This field defines the column in your table corresponding with the cell values of the matrix.</li>
+<li><strong>ncomp</strong>: Number of components to return. If <code>none</code>, it is set to the number of columns in data if the data is wide-formatted; if data is long-formatted, this must be set. <strong>It is strongly recommended you set the number of components for large data sets</strong>. Most database implementations (except DuckDB) require <code>ncomp</code> to be set for long-formatted data.</li>
+<li><strong>normalize</strong>: Indicates whether to normalize the factors to have unit inner product. If False, the loadings will have unit inner product.</li>
+<li><strong>standardize</strong>: Flag indicating to use standardized data with mean 0 and unit variance. standardized being True implies demean. Using standardized data is equivalent to computing principal components from the correlation matrix of data.</li>
+<li><strong>demean</strong>: Flag indicating whether to demean data before computing principal components. demean is ignored if standardize is True. Demeaning data but not standardizing is equivalent to computing principal components from the covariance matrix of data.</li>
+<li><strong>missing</strong>: <em>Does nothing currently.</em></li>
+<li><strong>weights</strong>: Column weights to use after transforming data according to standardize or demean when computing the principal components.</li>
+<li><strong>output</strong>: See <strong>Outputs and output options</strong> section of the README for more. This can be one of the following:</li>
+<li><code>'loadings'</code></li>
+<li><code>'loadings-long'</code></li>
+<li><code>'loadings-wide'</code></li>
+<li><code>'eigenvectors-wide'</code></li>
+<li><code>'eigenvectors-wide-transposed'</code></li>
+<li><code>'coefficients-wide'</code></li>
+<li><code>'coefficients-wide-transposed'</code></li>
+<li><code>'factors'</code></li>
+<li><code>'factors-long'</code></li>
+<li><code>'factors-wide'</code></li>
+<li><code>'projections'</code></li>
+<li><code>'projections-long'</code></li>
+<li><code>'projections-wide'</code></li>
+<li><code>'projections-untransformed-wide'</code></li>
+<li><strong>output_options</strong>:  See <strong>Outputs and output options</strong> section of the README for more.</li>
+<li><strong>method</strong>: The method used to calculate the regression. Currently only <code>'nipals'</code> is supported in non-Snowflake databases; <code>'eig'</code> and <code>'svd'</code> are additionally supported in Snowflake. See <strong>Methods and method options</strong> for more.</li>
+<li><strong>method_options</strong>: Options specific to the estimation method. See <strong>Methods and method options</strong> for more.</li>
+<li><strong>materialization_options</strong>: Database-specific options relating to how the table is materialized. See <strong>Materialization options</strong> for more.</li>
+</ul>
+<p>Names for function arguments and concepts vary across PCA implementations in different languages and frameworks.
+<strong>In this library, all names and concepts are equivalent to those in Statsmodels.</strong></p>
+<h1 id="outputs-and-output-options">Outputs and output options</h1>
+<table>
+    <thead>
+        <th>Output type</th>
+        <th>Description</th>
+        <th>Uniquely identifying columns</th>
+        <th>Other columns</th>
+        <th>Restrictions</th>
+        <th>Notes</th>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>'loadings'</code></td>
+            <td>Returns the eigenvectors (i.e. loadings), eigenvalues, and coefficients.</td>
+            <td><code>comp</code>, <code>[columns]</code></td>
+            <td><code>eigenvector</code>, <code>eigenvalue</code>, <code>coefficient</code></td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'loadings-long'</code></td>
+            <td>-</td>
+            <td><code>comp</code>, <code>[columns]</code></td>
+            <td><code>eigenvector</code>, <code>eigenvalue</code>, <code>coefficient</code></td>
+            <td>All</td>
+            <td>Alias for <code>'loadings'</code>.</td>
+        </tr>
+        <tr>
+            <td><code>'loadings-wide'</code></td>
+            <td>Same as <code>'loadings'</code>, but wide.</td>
+            <td><code>[columns]</code></td>
+            <td><code>eigenvector_{i}</code>, <code>coefficient_{i}</code></td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'eigenvectors-wide'</code></td>
+            <td>Same as <code>'loadings-wide'</code>, except only display eigenvectors.</td>
+            <td><code>[columns]</code></td>
+            <td><code>eigenvector_{i}</code></td>
+            <td>-</td>
+            <td>Alias for <code>'loadings-wide'</code> with <code>output_options['display_coefficients'] = false</code>.</td>
+        </tr>
+        <tr>
+            <td><code>'eigenvectors-wide-transposed'</code></td>
+            <td>Same as <code>'eigenvectors-wide'</code>, except transposed.</td>
+            <td><code>comp</code></td>
+            <td><code>[columns]</code></td>
+            <td>Wide input format only</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'coefficients-wide'</code></td>
+            <td>Same as <code>'loadings-wide'</code>, except only display coefficients.</td>
+            <td><code>[columns]</code></td>
+            <td><code>coefficient_{i}</code></td>
+            <td>-</td>
+            <td>Alias for <code>'loadings-wide'</code> with <code>output_options['display_eigenvectors'] = false</code>.</td>
+        </tr>
+        <tr>
+            <td><code>'coefficients-wide-transposed'</code></td>
+            <td>Same as <code>'coefficients-wide'</code>, except transposed.</td>
+            <td><code>comp</code></td>
+            <td><code>[columns]</code></td>
+            <td>Wide input format only</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'factors'</code></td>
+            <td>Returns the principal components (i.e. factors) in a long format.</td>
+            <td><code>comp</code>, <code>[index]</code></td>
+            <td><code>factor</code></td>
+            <td>Requires an <code>index=...</code> to be defined.</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'factors-long'</code></td>
+            <td>-</td>
+            <td><code>comp</code>, <code>[index]</code></td>
+            <td><code>factor</code></td>
+            <td>Requires an <code>index=...</code> to be defined.</td>
+            <td>Alias for <code>'factors'</code>.</td>
+        </tr>
+        <tr>
+            <td><code>'factors-wide'</code></td>
+            <td>Returns the principal components (i.e. factors) in a wide format.</td>
+            <td><code>[index]</code></td>
+            <td><code>factor_{i}</code></td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'projections'</code></td>
+            <td>Returns projections in a long format.</td>
+            <td><code>[columns]</code>, <code>[index]</code></td>
+            <td><code>projection</code></td>
+            <td>Requires an <code>index=...</code> to be defined.</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'projections-long'</code></td>
+            <td>-</td>
+            <td><code>[columns]</code>, <code>[index]</code></td>
+            <td><code>projection</code></td>
+            <td>Requires an <code>index=...</code> to be defined.</td>
+            <td>Alias for <code>'projections'</code>.</td>
+        </tr>
+        <tr>
+            <td><code>'projections-wide'</code></td>
+            <td>Returns projections in a wide format (each column is original column of the data.)</td>
+            <td><code>[index]</code></td>
+            <td><code>[columns]</code></td>
+            <td>Wide input format only</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><code>'projections-untransformed-wide'</code></td>
+            <td>Returns untransformed projections.</td>
+            <td><code>[index]</code></td>
+            <td><code>[columns]</code></td>
+            <td>Wide input format only</td>
+            <td>This is niche and you probably don't need this.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 id="output-options">Output options</h2>
+<h3 id="column-names">Column names</h3>
+<ul>
+<li><strong>columns_column_name</strong> (<code>string</code>; default: <code>'col'</code>): When converting a wide input to a long output, this is the column name used to group all the columns together.</li>
+<li><strong>eigenvector_column_name</strong> (<code>string</code>; default: <code>'eigenvector'</code>): Column name for eigenvectors i.e. loadings.</li>
+<li>In long formatted outputs, the column <code>{{eigenvector_column_name}}</code> contains the values of the eigenvectors.</li>
+<li>In wide formatted outputs, there will be multiple columns <code>{{eigenvector_column_name}}_{{i}}</code>, where <code>i</code> is an index for the principal component.</li>
+<li><strong>eigenvalue_column_name</strong> (<code>string</code>; default: <code>'eigenvalue'</code>): Column name for eigenvalues.</li>
+<li><strong>coefficient_column_name</strong> (<code>string</code>; default: <code>'coefficient'</code>): Column names for coefficient i.e. <code>eigenvector * sqrt(eigenvalue)</code>.</li>
+<li>In long formatted outputs, the column <code>{{coefficient_column_name}}</code> contains the values of the coefficients.</li>
+<li>In wide formatted outputs, there will be multiple columns <code>{{coefficient_column_name}}_{{i}}</code>, where <code>i</code> is an index for the principal component.</li>
+<li><strong>component_column_name</strong> (<code>string</code>; default: <code>'comp'</code>): Identifier for principal component; this is an integer typed column that identifies the component (e.g. if there are 3 components, then <code>{{component_column_name}}</code> can take on values of <code>0</code>, <code>1</code>, and <code>2</code>).</li>
+<li><strong>factor_column_name</strong> (<code>string</code>; default: <code>'factor'</code>): Column name for factors i.e. principal components.</li>
+<li>In long formatted outputs, the column <code>{{factor_column_name}}</code> contains the values of the principal component vectors.</li>
+<li>In wide formatted outputs, there will be multiple columns <code>{{factor_column_name}}_{{i}}</code>, where <code>i</code> is an index for the principal component.</li>
+<li><strong>projection_column_name</strong> (<code>string</code>; default: <code>'projection'</code>): Column name for projections of data onto the principal components.</li>
+</ul>
+<h3 id="column-display">Column display</h3>
+<ul>
+<li><strong>display_eigenvalues</strong> (<code>bool</code>; default = <code>True</code>): If True, display eigenvalues in loadings output.</li>
+<li><strong>display_coefficients</strong> (<code>bool</code>; default = <code>True</code>): If True, display coefficients in loadings output.</li>
+</ul>
+<h3 id="other">Other</h3>
+<ul>
+<li><strong>strip_quotes</strong> (<code>bool</code>; default = <code>True</code>): If true, strip outer quotes from column names in long outputs; if false, always use string literals.</li>
+</ul>
+<h2 id="setting-output-options-globally">Setting output options globally</h2>
+<p>Output options can be set globally via <code>vars</code>, e.g. in your <code>dbt_project.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
+<span class="nt">vars</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dbt_pca</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">output_options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">eigenvector_column_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loading</span>
+<span class="w">      </span><span class="nt">eigenvalue_column_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eigenval</span>
+<span class="w">      </span><span class="nt">coefficient_column_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coeff</span>
+</code></pre></div>
+<h1 id="methods-and-method-options">Methods and method options</h1>
+<p>There is currently only one method for calculating PCA in pure SQL, <code>'nipals'</code>, and I currently do not have plans to implement more as frankly it's taken years off my life to just implement the one. 😆</p>
+<p>Because Snowflake is just a pass-through to <code>sm.PCA()</code>, the Snowflake implementation supports everything Statsmodels supports: <code>'nipals'</code>, <code>'svd'</code>, and <code>'eig'</code>.</p>
+<h2 id="nipals-method"><code>nipals</code> method</h2>
+<p>Nonlinear Iterative Partial Least Squares (NIPALS), a method that is optimized for calculating the first few PCs of a matrix but is less performant and less accurate for the last few PCs.
+In practical settings, we usually want far fewer components than there are columns in the data, so this ends up being a good trade-off.</p>
+<p>Another advantage of NIPALS is it can be modified to handle missing data.
+This is a common method in many implementations of PCA, although it is not currently supported in the pure SQL implementations. (It's on the roadmap!)</p>
+<h3 id="options-for-methodnipals">Options for <code>method='nipals'</code></h3>
+<p>Specify these in a dict using the <code>method_options=</code> kwarg:</p>
+<ul>
+<li><strong>max_iter</strong> (<code>int</code>; default: varies) - Maximum iterations of the NIPALS algorithm.</li>
+<li><strong>check_tol</strong> (<code>bool</code>; default: varies) - If True, then check for convergence using the <code>tol</code> value. If False, always iterate <code>max_iter</code> times.</li>
+<li><strong>tol</strong> (<code>bool</code>; default: <code>5e-8</code>) - Tolerance to use when checking for convergence.</li>
+<li><strong>deterministic_column_seeding</strong> (<code>bool</code>; default: <code>False</code>) - If True, seed the initial column in a factor calculation with the alphanumerically first column. This guarantees the sign of the eigenvector even when normalized, but is significantly slower to converge. It is strongly recommended to keep this turned off.</li>
+</ul>
+<p>Some default values vary based on the database engine being used, and whether <code>calculate_in_steps</code> is enabled.</p>
+<h2 id="setting-method-options-globally">Setting method options globally</h2>
+<p>Method options can be set globally via <code>vars</code>, e.g. in your <code>dbt_project.yml</code>. Each <code>method</code> gets its own config, e.g. the <code>dbt_pca: method_options: nipals: ...</code> namespace only applies to the <code>nipals</code> method. Here is an example:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
+<span class="nt">vars</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dbt_pca</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">method_options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">nipals</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_iter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</code></pre></div>
+<h1 id="materialization-options">Materialization options</h1>
+<p>Materialization options influences the behind-the-scenes stuff relating to how the dbt model runs.</p>
+<p>Materialization options can be set globally via <code>vars</code>, e.g. in your <code>dbt_project.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
+<span class="nt">vars</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dbt_pca</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">materialization_options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">udf_database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_udf_db</span>
+<span class="w">      </span><span class="nt">udf_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_udf_schema</span>
+<span class="w">      </span><span class="nt">drop_udf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+<h2 id="snowflake">Snowflake</h2>
+<p>A lot of magic happens under the hood to make the Snowflake implementation possible.
+The defaults should work fine, but a lot of things are exposed to the user via the <code>materialization_options</code> to give the user control over things.</p>
+<p>Basically, the Snowflake implementation cheats by wrapping <code>sm.PCA()</code>.
+This is implemented as a user-defined table function under the hood, which is created as pre-hook which is injected into the model config as a side-effect of calling <code>dbt_pca.pca()</code>.
+The pre-hook is called lazily by using the JSON config injected into the compiled model.
+<strong>dbt_pca</strong> then reads the schema of the referenced node in the <code>table=</code> arg to infer the types for the function inputs and outputs.</p>
+<p>With all of that out of the way, here are the materialization options available for the Snowflake implementation:</p>
+<ul>
+<li><code>udf_database</code>: (<code>string</code>; default: use the model's database) - The database where the UDF is written to.</li>
+<li><code>udf_schema</code>: (<code>string</code>; default: use the model's schema) - The schema where the UDF is written to.</li>
+<li><code>infer_function_signature_types</code> (<code>bool</code>; default: <code>True</code>) - If True, infer types of the UDF function signature based on the types of the upstream node. If False, use <code>float</code></li>
+<li><code>cast_types_to_udf</code> (<code>bool</code>; default: <code>False</code> if <code>infer_function_signature_types</code> is <code>True</code>, otherwise <code>True</code>) - If True, all columns are cast before being placed into the UDF (e.g. <code>function(foo::number)</code> instead of <code>function(foo)</code>).</li>
+<li><code>drop_udf</code> (<code>bool</code>; default: <code>True</code>) - If True, drop the UDF after running the model (as a post-hook). If False, do not drop the UDF.</li>
+</ul>
+<p>The below options you probably will not need (it is suggested you instead cast the type in the definition, e.g. <code>index=['id::integer']</code>), but are available just in case the above options are insufficient:</p>
+<ul>
+<li><code>column_types</code> (<code>list[str] | None</code>; default: <code>None</code>) - If set, take input types for the columns from this instead of automatically inferring them.</li>
+<li><code>index_types</code> (<code>list[str] | None</code>; default: <code>None</code>) - If set, take input types for the index from this instead of automatically inferring them.</li>
+<li><code>values_type</code> (<code>str | None</code>; default: <code>None</code>) - If set, take input types for the values from this instead of automatically inferring them.</li>
+</ul>
+<h2 id="clickhouse">Clickhouse</h2>
+<ul>
+<li><code>calculate_in_steps</code> (<code>bool</code>; default: <code>True</code>) - If set, calculate the PCA in multiple steps: i.e. create temporary tables for each step involved. By default, this is <code>True</code> for Clickhouse for performance reasons; I will set this to <code>False</code> by default when Clickhouse releases <a href="https://github.com/ClickHouse/ClickHouse/issues/53449">materialized CTEs</a> (for such supported versions of Clickhouse).</li>
+</ul>
+<h2 id="duckdb">Duckdb</h2>
+<ul>
+<li><code>calculate_in_steps</code> (<code>bool</code>; default: <code>False</code>) - If set, calculate the PCA in multiple steps: i.e. create temporary tables for each step involved. By default, this is <code>False</code> for Duckdb as it is unnecessary for performance.</li>
+</ul>
+<h1 id="performance-and-misc-notes">Performance and Misc. Notes</h1>
+<p><strong>Please <a href="https://github.com/dwreeves/dbt_pca/issues">open an issue on Github</a> if you experience any performance problems.</strong>
+I am still ironing things out a bit.</p>
+<h3 id="duckdb_1">DuckDB</h3>
+<p>The performance for DuckDB is very fast, and users should generally not have any issues with DuckDB.
+In testing, values are asserted to equal the Statsmodels implementation of PCA with a very high level of precision,
+and the test cases run very quickly.</p>
+<h3 id="clickhouse_1">Clickhouse</h3>
+<p>Clickhouse is made performant by calculating individual steps in temporary tables.
+This is because Clickhouse does not support materialized CTEs (although this feature is scheduled to come out in 2025),
+which means expensive calculations are calculated redundantly multiple times as the number of principal components increases.</p>
+<p>By default, the <code>calculate_in_steps</code> materialization option is turned on for Clickhouse.
+But <code>calculate_in_steps</code> only works when <code>table=...</code> is a <code>ref()</code> or <code>source()</code> to a non-ephemeral node.
+For example, the following code works, but will be non-performant because it references a CTE:</p>
+<div class="highlight"><pre><span></span><code><span class="k">with</span><span class="w"> </span><span class="n">my_cte</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;my_table&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="p">)</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="ss">&quot;my_cte&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="ss">&quot;index&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="ss">&quot;col&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">values</span><span class="o">=</span><span class="ss">&quot;val&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+<p>It would be better to write the code like this, so long as <code>ref("my_table")</code> is not ephemeral (views are OK):</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="k">ref</span><span class="p">(</span><span class="ss">&quot;my_table&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="ss">&quot;index&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="ss">&quot;col&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">values</span><span class="o">=</span><span class="ss">&quot;val&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+<p>Clickhouse also has some other performance considerations.
+The <code>max_iter</code> is set to 150 (100 without <code>calculate_in_steps</code>), which is lower than in DuckDB and achieves an accuracy of <code>10e-6</code>, which is also lower than DuckDB.
+This <code>max_iter</code> was chosen to play nicely with Clickhouse's default <code>max_recursive_cte_evaluation_depth</code> of 1000, however you can adjust this through a pre-hook:</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;table&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pre_hook</span><span class="o">=</span><span class="s1">&#39;set max_recursive_cte_evaluation_depth = 5000;&#39;</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">  </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;my_table&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;a_id&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;b_id&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">values</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="w">    </span><span class="n">method_options</span><span class="o">=</span><span class="err">{</span><span class="s1">&#39;max_iter&#39;</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span><span class="err">}</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+</code></pre></div>
+<h3 id="snowflake_1">Snowflake</h3>
+<p>The Snowflake implementation cheats by wrapping <code>sm.PCA()</code> (there is no other way to do it, really).
+Because it runs as a Python UDF, for heavy workloads, "Snowpark-optimized" warehouses are recommended.
+These warehouses allow for additional memory to be allocated for a given warehouse size, relative to the amount of compute power of the warehouse instance.
+Read more about Snowpark-optimized warehouses in the <a href="https://docs.snowflake.com/en/user-guide/warehouses-snowpark-optimized">Snowflake documentation</a>.</p>
+<p>Snowflake UDTFs have a limit of 30 minutes of runtime per call (in practice, Snowflake allows the UDTF calls to go over a little bit to ~40 minutes).
+The Snowflake implementation of <strong>dbt-pca</strong> does not batch calls at all, neither by partitioning rows* nor by iterative calculations of components; everything is done in a single call, so that is a 30-minute limitation for the whole PCA calculation.
+This means for working on very large data (e.g. anything larger than <code>ncomp=20</code> on a <code>1e6 x 1e3</code> matrix in a <code>MEMORY_64X_x86</code> <code>XXLARGE</code> warehouse), you may run into issues with default performance settings.</p>
+<p>* There exist methods for <a href="https://scikit-learn.org/stable/auto_examples/decomposition/plot_incremental_pca.html">incrementalizing PCA</a> that could be used to partition the data,
+but these are not currently used by <strong>dbt-pca</strong>.</p>
+<p>For the Snowflake implementation, column types can be cast explicitly and this casting will be used for the UDF definition.
+This can be useful when referencing a CTE, from which column types cannot be inferred. (Column types are inferred for <code>ref()</code>'s and <code>source()</code>'s only.)
+For example:</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;table&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span><span class="w"> </span><span class="n">my_cte</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">column_a</span><span class="p">,</span><span class="w"> </span><span class="n">column_b</span><span class="p">,</span><span class="w"> </span><span class="n">column_c</span><span class="p">,</span><span class="w"> </span><span class="n">column_d</span><span class="p">,</span><span class="w"> </span><span class="n">column_e</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;upstream_table&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="p">)</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">  </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;my_cte&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;id::integer&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+<span class="w">      </span><span class="s1">&#39;column_a::number(38, 8)&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_b::number(38, 8)&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_c::number(38, 8)&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_d::number(38, 8)&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_e::number(38, 8)&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">2</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+</code></pre></div>
+<p>If you reference a CTE and do not cast types yourself, then types will be cast to the most permissive types, i.e. <code>float</code>s for all columns used in the matrix, and <code>varchar</code>s for all other columns.
+For example, in the above example, without explicit typecasting, the <code>index='id'</code> will be cast to a varchar:</p>
+<div class="highlight"><pre><span></span><code><span class="err">{{</span>
+<span class="w">  </span><span class="n">config</span><span class="p">(</span>
+<span class="w">    </span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;table&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+
+<span class="k">with</span><span class="w"> </span><span class="n">my_cte</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">column_a</span><span class="p">,</span><span class="w"> </span><span class="n">column_b</span><span class="p">,</span><span class="w"> </span><span class="n">column_c</span><span class="p">,</span><span class="w"> </span><span class="n">column_d</span><span class="p">,</span><span class="w"> </span><span class="n">column_e</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;upstream_table&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="p">)</span>
+
+<span class="c1">-- Because table=... is a CTE and there are no explicit typecasts,</span>
+<span class="c1">-- id will be cast to a varchar, and column_*&#39;s will be cast to floats</span>
+
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="err">{{</span>
+<span class="w">  </span><span class="n">dbt_pca</span><span class="p">.</span><span class="n">pca</span><span class="p">(</span>
+<span class="w">    </span><span class="k">table</span><span class="o">=</span><span class="s1">&#39;my_cte&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">index</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+<span class="w">      </span><span class="s1">&#39;column_a&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_b&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_c&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_d&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;column_e&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="n">ncomp</span><span class="o">=</span><span class="mi">2</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="err">}}</span>
+</code></pre></div>
+<p>Please note explicit type-casting of <code>columns</code> / <code>index</code> / <code>values</code> only works in Snowflake.</p>
+<h1 id="notes">Notes</h1>
+<h2 id="possible-future-features">Possible future features</h2>
+<p>Some things that could happen in the future:</p>
+<ul>
+<li>Better support for weights. Weights are only supported right now with wide formatted inputs.</li>
+</ul>
+<p>Note that this wish list is unlikely unless I personally need it or unless someone else contributes these features.
+I will continue to maintain this project going forward, but this project was a lot of work to get where it is today, and adding new features is not a high priority in my life.</p>
+<h1 id="faq">FAQ</h1>
+<h3 id="how-does-this-work">How does this work?</h3>
+<p>PCA via the NIPALS method can be implemented in SQL with nested recursive CTEs. This is how PCA is implemented in DuckDB and Clickhouse.
+The <code>pca()</code> macro generates SQL containing a fairly straightforward implementation of the <a href="https://cran.r-project.org/web/packages/nipals/vignettes/nipals_algorithm.html">steps outlined here</a>.
+Unlike my other library <a href="https://github.com/dwreeves/dbt_linreg"><strong>dbt_linreg</strong></a> no Jinja2 trickery (so to speak) is required to build the SQL for the core implementation.</p>
+<p>The Snowflake implementation just wraps Statsmodels directly as a UDTF, although it is formatted to have the exact same API as DuckDB and Clickhouse.</p>
+<p>All approaches were validated using Statsmodels <code>sm.PCA()</code>.</p>
+<p>One more note about the implementations for Clickhouse and Snowflake: these implementations use some cool pre-hook injection tricks to work.
+Basically, when you call <code>{{ dbt_pca.pca() }}</code>, under the hood, a <code>config()</code> call occurs which injects a pre-hook that generates SQL to create temp tables (Clickhouse) or a Python UDF (Snowflake).
+Due to weird limitations of how dbt works, these calculations require reading from a comment injected into the compiled SQL: basically, all the args to <code>pca()</code> are serialized as a JSON and then deserialized during pre-hook evaluation.
+Amusingly and perhaps counterintuitively, I found that making this under-the-hood process smooth and user-friendly was a lot harder and more time consuming than the SQL-based PCA implementation itself.</p>
+<h3 id="should-i-pre-process-my-wide-data-into-long-data-or-vice-versa">Should I pre-process my wide data into long data (or vice-versa)?</h3>
+<p><strong>dbt_pca</strong>'s implementation of PCA is optimized for long-formatted data in DuckDB and Clickhouse, and optimized for wide-formatted data in Snowflake. That said, I generally recommend not bothering to preprocess your data into long format if it's naturally wide, unless you have a good reason. <strong>dbt_pca</strong>'s wide-to-long conversion is perfectly optimal as-is, so just do whatever is easiest.</p>
+<h1 id="development">Development</h1>
+<h2 id="running-tests">Running tests</h2>
+<p>Run tests with <code>./run test {target}</code>.</p>
+<p>The default target is <code>duckdb</code>, which runs locally.</p>
+<p>The <code>clickhouse</code> target requires Docker.</p>
+<h1 id="trademark-copyright">Trademark &amp; Copyright</h1>
+<p>dbt is a trademark of dbt Labs.</p>
+<p>This package is <strong>unaffiliated</strong> with dbt Labs.</p>
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/dwreeves/dbt_pca" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/daniel-reeves-27700545/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.51d95adb.min.js"></script>
+      
+    
+  </body>
+</html>
