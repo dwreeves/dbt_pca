@@ -20,21 +20,19 @@ function setup {
   uvx pre-commit install
 }
 
-# #      -v "${PWD}/db_config/clickhouse/users.xml:/etc/clickhouse-server/users.d/users.xml" \
-
 function docker-run-clickhouse {
-    docker run \
-      -d \
-      -p 8123:8123 \
-      -p 8443:8443 \
-      -e "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1" \
-      -e "CLICKHOUSE_PASSWORD=dbt_user_password" \
-      -e "CLICKHOUSE_USER=dbt_user" \
-      -e "CLICKHOUSE_DB=default" \
-      --name dbt-pca-clickhouse \
-      --ulimit nofile=262144:262144 \
-      clickhouse/clickhouse-server:24.10 \
-      || docker start dbt-pca-clickhouse
+  docker run \
+    -d \
+    -p 8123:8123 \
+    -p 8443:8443 \
+    -e "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1" \
+    -e "CLICKHOUSE_PASSWORD=dbt_user_password" \
+    -e "CLICKHOUSE_USER=dbt_user" \
+    -e "CLICKHOUSE_DB=default" \
+    --name dbt-pca-clickhouse \
+    --ulimit nofile=262144:262144 \
+    clickhouse/clickhouse-server:24.10 \
+    || docker start dbt-pca-clickhouse
 }
 
 function clickhouse-client {
@@ -54,7 +52,6 @@ function docker-run-postgres {
 
 function test {
   local target="${1-"duckdb"}"
-  # local materialization="${2-"table"}"
 
   if [ -z "${GITHUB_ACTIONS}" ] && [ "${target}" = "postgres" ];
   then
