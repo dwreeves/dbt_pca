@@ -1,5 +1,9 @@
 # Changelog
 
+### `0.0.6`
+
+- Work in progress, but with some bugfixes.
+
 ### `0.0.5`
 
 - Work in progress, but with some bugfixes.

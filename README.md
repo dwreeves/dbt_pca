@@ -63,7 +63,7 @@ Add this the `packages:` list your dbt project's `packages.yml`:
 
 ```yaml
   - package: "dwreeves/dbt_pca"
-    version: "0.0.5"
+    version: "0.0.6"
 ```
 
 The full file will look something like this:
@@ -74,7 +74,7 @@ packages:
   # Other packages here
   # ...
   - package: "dwreeves/dbt_pca"
-    version: "0.0.5"
+    version: "0.0.6"
 ```
 
 # Examples

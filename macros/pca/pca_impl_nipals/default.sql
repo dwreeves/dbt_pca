@@ -64,7 +64,7 @@
   -- !DBT_PCA_CONFIG:{{ (pca_num | string).zfill(3) }}:{{ tojson(dbt_pca_config) }}
   {#- todo: replace select star with select columns. not for perf reasons, it just reads better. #}
   select *
-  from {{ model.name~'__dbt_pca_'~(count | string).zfill(3)~'_final' }}
+  from {{ model.name~'__dbt_pca_'~(pca_num | string).zfill(3)~'_final' }}
 )
   {%- endset %}
   {{ return(final_query) }}

@@ -2,7 +2,7 @@
 name = "dbt_pca"
 requires-python = "~=3.11"
 description = "dbt_pca dbt package"
-version = "0.0.5"
+version = "0.0.6"
 readme = "README.md"
 authors = [{ name = "Daniel Reeves", email = "xdanielreeves@gmail.com" }]
 
