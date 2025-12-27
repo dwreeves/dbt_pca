@@ -5,9 +5,9 @@
 >
 > The following features are currently missing and are being prioritized for a **0.1.0** release:
 > - Missing value support (but probably not the EM algorithm algorithm for the time being).
+> - (Snowflake) Swap to Snowpark dataframes
 > - ~~Support for weights~~
 > - ~~Snowflake support~~
-> - (Maybe) Fuller, paginated documentation on Github Pages.
 > - ~~Remove custom materialization~~
 
 <p align="center">
@@ -40,6 +40,8 @@ Reasons to use **dbt_pca**:
 **Currently only DuckDB, Clickhouse, and Snowflake are supported.**
 
 _Note: If you enjoy this project, you may also enjoy my other dbt machine learning project, [**dbt_linreg**](https://github.com/dwreeves/dbt_linreg)._ 😊
+
+_Note: If you really want to run PCA on your data, especially a lot of data, this library is likely not the most effective way to do that. See FAQ for more._
 
 # Supported Databases
 
@@ -209,7 +211,7 @@ pca as (
       index='id',
       columns='tag',
       values='has_tag',
-      missing='zero',
+      missing='fill-zero',
       output='factors-wide',
       ncomp=5
     )
@@ -954,6 +956,14 @@ Amusingly and perhaps counterintuitively, I found that making this under-the-hoo
 ### Should I pre-process my wide data into long data (or vice-versa)?
 
 **dbt_pca**'s implementation of PCA is optimized for long-formatted data in DuckDB and Clickhouse, and optimized for wide-formatted data in Snowflake. That said, I generally recommend not bothering to preprocess your data into long format if it's naturally wide, unless you have a good reason. **dbt_pca**'s wide-to-long conversion is perfectly optimal as-is, so just do whatever is easiest.
+
+### Should I actually use this package?
+
+Possibly not! In Duckdb or Clickhouse, you will likely find it more performant to run a dbt Python model instead of doing this in-database. In Snowflake, you should use [the Snowpark PCA implementation](https://docs.snowflake.com/en/developer-guide/snowpark-ml/reference/latest/api/modeling/snowflake.ml.modeling.decomposition.PCA).
+
+This repo is more proof that this is possible, not necessarily the most desirable implementation.
+
+That said, there are some niceties to the interface.
 
 # Development
 

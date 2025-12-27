@@ -87,7 +87,7 @@ dbt_pca_preproc_step1 as (
     {% if weights %}
     {{ weights[loop.index-1] }} as w,
     {% endif %}
-    {% if missing == 'zero' %}
+    {% if missing in ['zero', 'fill-zero'] %}
     coalesce({{ c }}, 0) as x
     {% else %}
     {{ c }} as x
@@ -95,17 +95,46 @@ dbt_pca_preproc_step1 as (
   from {{ tbl }}
   {% if missing == 'drop-col' %}
   qualify min({{ c }} is not null) over ()
+  {% elif missing == 'drop-row' %}
+  where (select min({{ c }} is not null) from {{ this }})
   {% endif %}
   {% if not loop.last %}
   union all
   {% endif %}
   {% endfor %}
-  {% else %}
+  {% elif long and not (missing in ['zero', 'fill-zero']) %}
   select
     {{ dbt_pca.__alias_cols(index, 'idx') }},
     {{ dbt_pca.__alias_cols(columns, 'col') }},
     {{ values }} as x
   from {{ tbl }}
+  {% if missing == 'drop-col' %}
+  qualify min({{ c }} is not null) over (partition by {{ dbt_pca.__alias_cols(columns, 'col') }})
+  {% elif missing == 'drop-row' %}
+  qualify min({{ c }} is not null) over (partition by {{ dbt_pca.__alias_cols(index, 'idx') }})
+  {% endif %}
+  {% else %}
+  {# if long and missing == 'fill-zero' #}
+  {%- set cols = dbt_pca._alias_columns_to_list(columns) %}
+  {%- set idx = dbt_pca._alias_index_to_list(index) if index else ['idx'] %}
+  select
+    {{ dbt_pca._list_with_alias(idx, 'a') }},
+    {{ dbt_pca._list_with_alias(cols, 'b') }},
+    coalesce(base.x, 0) as x
+  from
+    (select distinct {{ dbt_pca.__alias_cols(index, 'idx') }} from {{ tbl }}) as a,
+    (select distinct {{ dbt_pca.__alias_cols(columns, 'col') }} from {{ tbl }}) as b
+  left join (
+    select
+      {{ dbt_pca.__alias_cols(index, 'idx') }},
+      {{ dbt_pca.__alias_cols(columns, 'col') }},
+      {{ values }} as x
+    from {{ tbl }}
+  )
+  on
+    {{ dbt_pca._join_predicate(idx, 'base', 'a') }}
+    and
+    {{ dbt_pca._join_predicate(cols, 'base', 'b') }}
   {%- endif %}
 )
 {% endmacro %}

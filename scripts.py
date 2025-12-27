@@ -15,7 +15,8 @@ import os.path as op
 import re
 import sys
 import warnings
-from typing import NamedTuple
+from dataclasses import dataclass
+from dataclasses import field
 from typing import Optional
 from typing import Protocol
 
@@ -40,9 +41,10 @@ DEFAULT_SIZE = 10_000
 DEFAULT_SEED = 9434874
 
 
-class TestCase(NamedTuple):
+@dataclass
+class TestCase:
     df: pd.DataFrame
-    index_column: Optional[str] = None
+    index_columns: list[str] = field(default_factory=list)
     weights: Optional[pd.Series] = None
 
 
@@ -63,7 +65,7 @@ def collinear_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> Test
 
     weights = pd.Series([1, 3, 3, 2, 4], index=["x1", "x2", "x3", "x4", "x5"])
 
-    return TestCase(df=df, index_column="idx", weights=weights)
+    return TestCase(df=df, index_columns=["idx"], weights=weights)
 
 
 def generate_orthonormal_vectors(cols, rows):
@@ -89,12 +91,33 @@ def missing_data_matrix(size: int = DEFAULT_SIZE, seed: int = DEFAULT_SEED) -> T
     rs = np.random.RandomState(seed=seed)
     df = pd.DataFrame(index=range(size))
 
+    missing_rows = [
+        1,
+        1000,
+        1005,
+        1010,
+        1015,
+        1020
+    ]
+    missing_cols = [
+        "c2",
+        "c4"
+    ]
+
     for c in range(cols):
         df[f"c{c}"] = rs.normal(0, 1, size=size)
 
     cov = np.array([[1.0 if i == j else 0.7 for i in range(cols)] for j in range(cols)])
-    new = df @ np.linalg.cholesky(cov).T
+    new: pd.DataFrame = (np.linalg.cholesky(cov) @ df.T).T
     new.columns = df.columns
+
+    for row in missing_rows:
+        for col in missing_cols:
+            new.loc[row, col] = np.nan
+
+    weights = pd.Series([5, 4, 3, 2, 1, 1, 1, 1], index=[f"c{c}" for c in range(cols)])
+
+    return TestCase(df=new, index_columns=[], weights=weights)
 
 
 def write_sql_of_dataframe(df: pd.DataFrame) -> str:
@@ -111,6 +134,7 @@ def write_sql_of_dataframe(df: pd.DataFrame) -> str:
 
 ALL_TEST_CASES: dict[str, TestCaseCallable] = {
     "collinear_matrix": collinear_matrix,
+    "missing_data_matrix": missing_data_matrix,
 }
 
 
@@ -135,6 +159,7 @@ def click_option_size(**kwargs):
 
 
 @click.group("main")
+@click.rich_config(help_config={"max_width": 120})
 def cli():
     """CLI for manually testing the code base."""
 
@@ -171,24 +196,19 @@ def cli():
               help="If true, standardize the data in PCA() call.")
 @click.option("--missing", "-m",
               default=None,
-              type=click.Choice(["drop-row", "drop-col", "drop-min", "fill-em"]),
+              type=click.Choice(["drop-row", "drop-col", "drop-min", "fill-em", "fill-zero"]),
               show_default=True,
               help="Method for handling missing data.")
 @click.option("--ncomp", "-c",
               default=None,
               type=click.INT,
               help="If set, select a specific number of components to calculate.")
-@click.option("--method", "-m",
+@click.option("--method",
               default="nipals",
               type=click.Choice(["nipals"]),
               show_default=True,
               help="Select a method for computing PCA. Only NIPALS supported today.")
-@click.option("--missing",
-              default=None,
-              type=click.Choice(["drop-row", "drop-col", "drop-min", "fill-em", "zero"]),
-              show_default=True,
-              help="Select a method for computing PCA. Only NIPALS supported today.")
-@click.option("--tol", "-t",
+@click.option("--tol",
               default=5e-8,
               type=click.FLOAT,
               show_default=True,
@@ -207,7 +227,7 @@ def cli():
                   "projections-wide",
                   "projections-untransformed-wide"
               ]),
-              default=False,
+              default=None,
               help="If set, output as sql")
 def pca_(
         table: str,
@@ -219,9 +239,9 @@ def pca_(
         missing: Optional[str],
         ncomp: int,
         method: str,
+        tol: float,
         size: int,
         seed: int,
-        tol: float,
         output_sql: str
 ):
     """
@@ -248,9 +268,13 @@ def pca_(
         cols = test_case.df.columns[:columns]
         wts = test_case.weights.iloc[:columns]
 
+    if missing == "fill-zero":
+        test_case.df.fillna(0, inplace=True)
+        method = None
+
     pca = PCA(
         test_case.df[
-            [i for i in cols if i not in {test_case.index_column}]
+            [i for i in cols if i not in test_case.index_columns]
         ],
         ncomp=ncomp,
         method=method,
@@ -362,7 +386,7 @@ def echo_table_name(s: str):
     click.echo(click.style("=" * 80, fg="green"))
 
 
-@cli.command("gen-test-cases")
+@cli.command("seed")
 @click.option("--table", "-t", "tables",
               multiple=True,
               default=None,
@@ -374,7 +398,7 @@ def echo_table_name(s: str):
               is_flag=True,
               help="Skip if the file exists. Otherwise, overwrite.")
 def gen_test_cases(tables: list[str], size: int, seed: int, skip_if_exists: bool):
-    """Generate integration test cases (CSV files)."""
+    """Write test case data to CSV files."""
     if not tables:
         tables = ALL_TEST_CASES
     for table_name in tables:

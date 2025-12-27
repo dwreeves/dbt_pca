@@ -68,7 +68,7 @@ function test {
     rm -f dbt.duckdb
   fi
 
-  uv run scripts.py gen-test-cases
+  uv run scripts.py seed
   dbt deps --target "${target}"
   dbt seed --target "${target}"
   dbt run --target "${target}" --selector "${target}-selector" --no-partial-parse

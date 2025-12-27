@@ -181,7 +181,7 @@ class Pca:
         df.set_index(['{{ "', '".join(index) }}'], inplace=True)
         {%- endif %}
         {%- endif %}
-        {% if missing == 'zero' %}
+        {% if missing in ['zero', 'fill-zero'] %}
         df = df.fillna(0)
         {% set missing = none %}
         {% endif %}
