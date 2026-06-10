@@ -1,5 +1,9 @@
 # Changelog
 
+### `0.0.7`
+
+- Bugfix warning about `create_pca_udtf` macro being not found.
+
 ### `0.0.6`
 
 - Work in progress, but with some bugfixes.

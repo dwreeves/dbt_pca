@@ -169,7 +169,7 @@ macros:
   - name: clickhouse___pca_nipals_single_iteration
     docs:
       show: false
-  - name: create_pca_udtf
+  - name: _create_pca_udtf
     docs:
       show: false
   - name: default___inject_config_into_relation
