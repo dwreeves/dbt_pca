@@ -31,46 +31,49 @@ macros:
         type: string
         description: Name of table or CTE to pull the data from. You can use a `ref()`, `source()`, a CTE name, or subquery.
       - name: index
-        type: string or list of strings
+        type: any
         description: The uniquely identifying index for each row of data. You may define one or more columns as the index. This field is **required** if your data is long or you want to output components. (You can also specify `rows=...` instead of `index=...` if you prefer.)
       - name: columns
-        type: string or list of strings
+        type: any
         description: Either a list of columns (for wide-formatted data), or a uniquely identifying index for each column of data (for long-formatted data). You may specify multiple columns even for long-formatted data; in this case the multiple columns will be treated like a multi-index.
+      - name: rows
+        type: any
+        description: Alias for `index`.
       - name: values
         type: string
         description: Specifying this will make **dbt_pca** treat your data as long-formatted. This field defines the column in your table corresponding with the cell values of the matrix.
-      - name: values
-        type: integer
+      - name: ncomp
+        type: int
         description: Number of components to return. If `none`, it is set to the number of columns in data if the data is wide-formatted; if data is long-formatted, this must be set. **It is strongly recommended you set the number of components for large data sets**. Most database implementations (except DuckDB) require `ncomp` to be set for long-formatted data.
       - name: normalize
-        type: boolean
+        type: bool
         description: Indicates whether to normalize the factors to have unit inner product. If False, the loadings will have unit inner product.
       - name: standardize
-        type: boolean
+        type: bool
         description: Flag indicating to use standardized data with mean 0 and unit variance. `standardized` being True implies demean. Using standardized data is equivalent to computing principal components from the correlation matrix of data.
       - name: demean
-        type: boolean
+        type: bool
         description: Flag indicating whether to demean data before computing principal components. `demean` is ignored if standardize is True. Demeaning data but not standardizing is equivalent to computing principal components from the covariance matrix of data.
-      - name: weights
+      - name: missing
         type: string
         description: _Does nothing currently._
-      - name: missing
+      - name: weights
         type: string
         description: _Does nothing currently._
       - name: output
         type: string
         description: See **Outputs and output options** section of the README for more.
       - name: output_options
-        type: dict
+        type: dict[str, any]
         description: See **Outputs and output options** section of the README for more.
       - name: method
         type: string
         description: The method used to calculate the regression. Currently only `'nipals'` is supported in non-Snowflake databases; `'eig'` and `'svd'` are additionally supported in Snowflake. See **Methods and method options** for more.
       - name: method_options
-        type: dict
+        type: dict[str, any]
         description: See **Methods and method options** section of the README for more.
       - name: materialization_options
-        type: dict
+        type: dict[str, any]
         description: See **Materialization options** section of the README for more.
 
   # Everything down here is just for intermediary calculations or helper functions.

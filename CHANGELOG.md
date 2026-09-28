@@ -1,5 +1,10 @@
 # Changelog
 
+### `0.0.8`
+
+- Fix argument type warnings in dbt-core 1.12
+- Swap `pre-commit` for `prek`; move Python dev dependencies into a PEP 723 header in `scripts.py`
+
 ### `0.0.7`
 
 - Bugfix warning about `create_pca_udtf` macro being not found.

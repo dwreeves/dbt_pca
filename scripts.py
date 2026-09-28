@@ -1,3 +1,16 @@
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#   "numpy>=2.2.1",
+#   "pandas>=2.2.3,<3",
+#   "pyyaml>=6.0.2",
+#   "rich-click>=1.8.5",
+#   "ruff>=0.8.4",
+#   "statsmodels>=0.14.4",
+#   "tabulate>=0.9.0",
+# ]
+# ///
 """
 This file is used for generation of CSV files for integration test cases,
 and also for manual verification + generation of test case values,

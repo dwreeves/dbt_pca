@@ -1,24 +1,29 @@
 repos:
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.3.0
+  rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
   hooks:
     - id: check-yaml
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: v0.6.2
+  rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd  # frozen: v0.16.9
   hooks:
-    - id: ruff
+    - id: ruff-check
 
 - repo: https://github.com/koalaman/shellcheck-precommit
-  rev: v0.8.0
+  rev: 99470f5e12208ff0fb17ab81c3c494f7620a1d8d  # frozen: v0.11.0
   hooks:
     - id: shellcheck
       args: [-x, run]
 
 - repo: https://github.com/rhysd/actionlint
-  rev: v1.6.26
+  rev: 914e7df21a07ef503a81201c76d2b11c789d3fca  # frozen: v1.7.12
   hooks:
     - id: actionlint
+
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: fa412071e4f5d44d44f9e365f4676f9df92456a2  # frozen: v1.30.1
+  hooks:
+    - id: zizmor

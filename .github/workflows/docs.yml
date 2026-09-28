@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+permissions: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -10,13 +11,17 @@ jobs:
   build:
     name: Deploy docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Checkout main
-      uses: actions/checkout@v4
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Install dependencies
       run: sudo apt-get update
     - name: Deploy docs
-      uses: mhausenblas/mkdocs-deploy-gh-pages@1.26
+      uses: mhausenblas/mkdocs-deploy-gh-pages@d77dd03172e96abbcdb081d8c948224762033653 # 1.26
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         CONFIG_FILE: docs/mkdocs.yml
